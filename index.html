@@ -3,93 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutería Las Espinas Bellas - Panel de Control</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Frutería Las Espinas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --verde-director: #2d6a4f;
-            --verde-claro: #95d5b2;
-            --amarillo-acento: #ffca3a;
-            --blanco: #ffffff;
-            --texto: #333;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
-        body { background-color: #f4f4f4; color: var(--texto); padding-bottom: 80px; }
-
-        /* CABECERA */
-        header {
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1610832958506-c5697d4f0722?auto=format&fit=crop&q=80');
-            background-size: cover; background-position: center;
-            height: 40vh; display: flex; flex-direction: column; justify-content: center;
-            align-items: center; text-align: center; color: white;
-        }
-
-        /* GRID DE PRODUCTOS */
-        .container { padding: 20px 15px; max-width: 1200px; margin: auto; }
-        .catalog {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: white; border-radius: 15px; overflow: hidden;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); position: relative;
-            display: flex; flex-direction: column;
-        }
-        .card img { width: 100%; height: 150px; object-fit: cover; }
-        .card-info { padding: 15px; text-align: center; flex-grow: 1; }
-        .price { color: var(--verde-principal); font-weight: bold; font-size: 1.1rem; }
-
-        /* CONTROLES MODO DUEÑO */
-        .admin-controls {
-            position: fixed; top: 20px; left: 20px; z-index: 1000;
-            background: var(--verde-director); padding: 10px; border-radius: 8px;
-        }
-        .admin-controls button {
-            background: white; border: none; padding: 8px 12px;
-            margin: 2px; cursor: pointer; border-radius: 4px; font-weight: bold;
-        }
-        .save-bar {
-            position: fixed; bottom: 0; width: 100%; background: var(--amarillo-acento);
-            padding: 15px; text-align: center; display: none; z-index: 2000;
-        }
-        .btn-whatsapp {
-            position: fixed; bottom: 70px; right: 20px; background: #25d366;
-            color: white; width: 55px; height: 55px; border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; text-decoration: none;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-weight: bold;
-        }
+        body { font-family: 'Poppins', sans-serif; background: #f4f4f4; padding-bottom: 80px; }
+        header { background: #2d6a4f; color: white; padding: 40px; text-align: center; }
+        .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; padding: 20px; }
+        .card { background: white; border-radius: 10px; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .card img { width: 100%; border-radius: 5px; }
+        .admin-btn { position: fixed; top: 10px; right: 10px; z-index: 100; padding: 10px; background: #ffca3a; border: none; cursor: pointer; }
+        .save-bar { position: fixed; bottom: 0; width: 100%; background: #ffca3a; padding: 15px; text-align: center; display: none; }
     </style>
 </head>
 <body>
 
-    <div class="admin-controls">
-        <button onclick="window.location.reload()">Modo Cliente</button>
-        <button onclick="enterAdminMode()">Modo Dueño</button>
-    </div>
+    <button class="admin-btn" onclick="entrar()">Modo Dueño</button>
 
     <header>
-        <h1 id="nombre-negocio" contenteditable="false">Cargando...</h1>
-        <p id="biz-slogan" contenteditable="false">Frutas y verduras frescas</p>
+        <h1 id="n-negocio">Cargando...</h1>
+        <p id="l-negocio">Cargando...</p>
     </header>
 
-    <div class="container">
-        <div class="catalog" id="main-catalog"></div>
-    </div>
+    <div class="catalog" id="contenedor"></div>
 
-    <div class="save-bar" id="save-bar">
-        <button onclick="saveAll()">💾 GUARDAR CAMBIOS EN LA NUBE</button>
+    <div class="save-bar" id="barra-guardar">
+        <button onclick="guardar()">💾 GUARDAR CAMBIOS</button>
     </div>
-
-    <a href="#" id="WhatsApp-BTN" class="btn-whatsapp" target="_blank">W</a>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <script>
-        // CONFIGURACIÓN DE TU PROYECTO
         const firebaseConfig = {
             apiKey: "AIzaSyAOcuj_tFSsKKqKXtggvrrZgWDAPqt2uEk",
             authDomain: "fruteria-las-espinas.firebaseapp.com",
@@ -100,80 +44,62 @@
             appId: "1:995826892241:web:19fc6ba9096ecac7d7f4f0"
         };
 
-        // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        let editando = false;
+        let misProductos = [];
+        let miConfig = {};
 
-        let isEditMode = false;
-        let productos = [];
-        let config = {};
-
-        // CARGAR DATOS DESDE LA NUBE AL INICIAR
-        db.ref('/').on('value', (snapshot) => {
-            const datos = snapshot.val();
-            if (datos) {
-                productos = datos.productos || [];
-                config = datos.config || {
-                    nombre: "Frutería Las Espinas Bellas",
-                    lema: "Frutas y verduras frescas directo a tu hogar",
-                    telefono: "573000000000"
-                };
-                renderizarTodo();
+        db.ref('/').on('value', (snap) => {
+            const data = snap.val();
+            if (data) {
+                misProductos = data.productos || [];
+                miConfig = data.config || { nombre: "Frutería", lema: "Frutas frescas" };
+                dibujar();
             }
         });
 
-        function renderizarTodo() {
-            document.getElementById('nombre-negocio').innerText = config.nombre;
-            document.getElementById('biz-slogan').innerText = config.lema;
-            document.getElementById('WhatsApp-BTN').href = `https://wa.me/${config.telefono}`;
-            
-            const catalog = document.getElementById('main-catalog');
-            catalog.innerHTML = '';
+        function dibujar() {
+            document.getElementById('n-negocio').innerText = miConfig.nombre;
+            document.getElementById('l-negocio').innerText = miConfig.lema;
+            const caja = document.getElementById('contenedor');
+            caja.innerHTML = '';
 
-            productos.forEach((prod, index) => {
-                catalog.innerHTML += `
+            misProductos.forEach((p, i) => {
+                caja.innerHTML += `
                     <div class="card">
-                        <img src="${prod.imagen}" onclick="changeImg(${index})">
-                        <div class="card-info">
-                            <h3 contenteditable="${isEditMode}" oninput="productos[index].nombre=this.innerText">${prod.nombre}</h3>
-                            <p class="price" contenteditable="${isEditMode}" oninput="productos[index].precio=this.innerText">${prod.precio}</p>
-                        </div>
-                    </div>
-                `;
+                        <img src="${p.imagen}">
+                        <h3 contenteditable="${editando}" oninput="misProductos[${i}].nombre=this.innerText">${p.nombre}</h3>
+                        <p contenteditable="${editando}" oninput="misProductos[${i}].precio=this.innerText">${p.precio}</p>
+                    </div>`;
             });
 
-            if(isEditMode) {
-                catalog.innerHTML += `<div class="card" style="border: 2px dashed #ccc; cursor:pointer; height:200px; display:flex; align-items:center; justify-content:center;" onclick="addCard()">+ Agregar Fruta</div>`;
+            if(editando) {
+                caja.innerHTML += `<div onclick="nuevo()" style="border:2px dashed #333; padding:20px; cursor:pointer;">+ Añadir</div>`;
             }
         }
 
-        function enterAdminMode() {
-            const pass = prompt("Clave de acceso:");
-            if (pass === "1234") {
-                isEditMode = true;
-                document.getElementById('save-bar').style.display = 'block';
-                document.getElementById('nombre-negocio').contentEditable = true;
-                document.getElementById('biz-slogan').contentEditable = true;
-                renderizarTodo();
+        function entrar() {
+            let clave = prompt("Clave:");
+            if(clave === "1234") {
+                editando = true;
+                document.getElementById('barra-guardar').style.display = 'block';
+                document.getElementById('n-negocio').contentEditable = true;
+                document.getElementById('l-negocio').contentEditable = true;
+                dibujar();
             }
         }
 
-        function addCard() {
-            productos.push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/150" });
-            renderizarTodo();
+        function nuevo() {
+            misProductos.push({ nombre: "Nueva Fruta", precio: "$0", imagen: "https://via.placeholder.com/150" });
+            dibujar();
         }
 
-        function saveAll() {
-            config.nombre = document.getElementById('nombre-negocio').innerText;
-            config.lema = document.getElementById('biz-slogan').innerText;
-
-            db.ref('/').set({
-                productos: productos,
-                config: config
-            }).then(() => {
-                alert("¡Sincronizado con la nube!");
-                location.reload();
-            });
+        function guardar() {
+            miConfig.nombre = document.getElementById('n-negocio').innerText;
+            miConfig.lema = document.getElementById('l-negocio').innerText;
+            db.ref('/').set({ productos: misProductos, config: miConfig })
+                .then(() => alert("¡Guardado en la nube!"));
         }
     </script>
 </body>
