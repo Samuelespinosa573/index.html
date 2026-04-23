@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutería Dinámica - Panel de Control</title>
+    <title>Frutería Las Espinas Bellas - Panel de Control</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -80,7 +80,6 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-weight: bold;
         }
 
-        /* Ocultar botón eliminar si no es modo edición */
         .delete-btn {
             display: none; position: absolute; top: 5px; right: 5px;
             background: rgba(255,0,0,0.7); color: white; border: none;
@@ -97,13 +96,12 @@
     </div>
 
     <header>
-        <h1 id="biz-name" contenteditable="false">Nombre de tu Negocio</h1>
-        <p id="biz-slogan" contenteditable="false">Frutas y verduras frescas directo a tu hogar</p>
+        <h1 id="biz-name" contenteditable="false">Cargando...</h1>
+        <p id="biz-slogan" contenteditable="false">Frutas y verduras frescas</p>
     </header>
 
     <div class="container">
-        <div class="catalog" id="main-catalog">
-            </div>
+        <div class="catalog" id="main-catalog"></div>
     </div>
 
     <div class="save-bar" id="save-bar">
@@ -113,45 +111,64 @@
 
     <a href="#" id="whatsapp-btn" class="btn-whatsapp" target="_blank">W</a>
 
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+
     <script>
+        // CONFIGURACIÓN DE TU PROYECTO
+        const firebaseConfig = {
+            apiKey: "AIzaSyAOcuj_tFSsKKqKXtggvrrZgWDAPqt2uEk",
+            authDomain: "fruteria-las-espinas.firebaseapp.com",
+            databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com/",
+            projectId: "fruteria-las-espinas",
+            storageBucket: "fruteria-las-espinas.appspot.com",
+            messagingSenderId: "123389012444",
+            appId: "1:123389012444:web:86f686c0780287a227845f"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let isEditMode = false;
-        let products = [
-            { id: 1, name: "Tomate Chonto", price: "$3.500 / kg", img: "https://images.unsplash.com/photo-1512149177596-f817c7ef5d4c?w=400" },
-            { id: 2, name: "Naranja Tangelo", price: "$2.800 / lb", img: "https://images.unsplash.com/photo-1557800636-894a64c1696f?w=400" }
-        ];
+        let products = [];
+        let config = {};
 
-        let config = {
-            name: "Nombre de tu Negocio",
-            slogan: "Frutas y verduras frescas directo a tu hogar",
-            phone: "573000000000"
-        };
-
-        // Cargar datos al iniciar
-        window.onload = () => {
-            const savedProducts = localStorage.getItem('localProducts');
-            const savedConfig = localStorage.getItem('localConfig');
-            if(savedProducts) products = JSON.parse(savedProducts);
-            if(savedConfig) config = JSON.parse(savedConfig);
-            
-            renderPage();
-        };
+        // CARGAR DATOS DESDE LA NUBE AL INICIAR
+        db.ref('/').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                products = data.products || [];
+                config = data.config || {
+                    name: "Frutería Las Espinas Bellas",
+                    slogan: "Frutas y verduras frescas directo a tu hogar",
+                    phone: "573000000000"
+                };
+                renderPage();
+            } else {
+                // Datos iniciales por defecto si la base de datos está vacía
+                products = [
+                    { id: 1, name: "Tomate Chonto", price: "$3.500 / kg", img: "https://images.unsplash.com/photo-1512149177596-f817c7ef5d4c?w=400" }
+                ];
+                config = { name: "Tu Negocio", slogan: "Frutas frescas", phone: "573000000000" };
+                saveAll(); 
+            }
+        });
 
         function renderPage() {
-            // Aplicar Configuración General
             document.getElementById('biz-name').innerText = config.name;
             document.getElementById('biz-slogan').innerText = config.slogan;
             document.getElementById('whatsapp-btn').href = `https://wa.me/${config.phone}?text=Hola, quiero un pedido`;
 
             const catalog = document.getElementById('main-catalog');
-            catalog.innerHTML = ''; // Limpiar
+            catalog.innerHTML = '';
 
-            // Generar tarjetas de productos
             products.forEach((p, index) => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
                     <button class="delete-btn" onclick="deleteProduct(${index})">×</button>
-                    <img src="${p.img}" onclick="changeImg(${index})" title="Click para cambiar imagen">
+                    <img src="${p.img}" onclick="changeImg(${index})">
                     <div class="card-info">
                         <h3 contenteditable="${isEditMode}" onblur="updateText(${index}, 'name', this)">${p.name}</h3>
                         <p class="price" contenteditable="${isEditMode}" onblur="updateText(${index}, 'price', this)">${p.price}</p>
@@ -160,7 +177,6 @@
                 catalog.appendChild(card);
             });
 
-            // Botón Agregar
             const addCard = document.createElement('div');
             addCard.className = 'add-card';
             addCard.innerHTML = '+';
@@ -177,13 +193,10 @@
                 document.getElementById('biz-name').contentEditable = true;
                 document.getElementById('biz-slogan').contentEditable = true;
                 renderPage();
-                alert("Modo edición activado. Haz clic en los textos o imágenes para cambiar.");
             } else {
                 alert("Código incorrecto");
             }
         }
-
-        // --- FUNCIONES DE EDICIÓN ---
 
         function updateText(index, field, element) {
             products[index][field] = element.innerText;
@@ -191,7 +204,7 @@
 
         function changeImg(index) {
             if(!isEditMode) return;
-            const newUrl = prompt("Pega el enlace (URL) de la nueva imagen:", products[index].img);
+            const newUrl = prompt("Pega el enlace de la imagen:", products[index].img);
             if(newUrl) {
                 products[index].img = newUrl;
                 renderPage();
@@ -199,18 +212,17 @@
         }
 
         function addProduct() {
-            const newP = {
+            products.push({
                 id: Date.now(),
                 name: "Nuevo Producto",
                 price: "$0.00",
                 img: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?w=400"
-            };
-            products.push(newP);
+            });
             renderPage();
         }
 
         function deleteProduct(index) {
-            if(confirm("¿Eliminar este producto?")) {
+            if(confirm("¿Eliminar producto?")) {
                 products.splice(index, 1);
                 renderPage();
             }
@@ -220,15 +232,19 @@
             config.name = document.getElementById('biz-name').innerText;
             config.slogan = document.getElementById('biz-slogan').innerText;
             
-            // Opcional: Preguntar por el teléfono al guardar
-            const newPhone = prompt("Confirma o cambia tu número de WhatsApp (solo números):", config.phone);
-            if(newPhone) config.phone = newPhone;
+            if(isEditMode) {
+                const newPhone = prompt("Número de WhatsApp:", config.phone);
+                if(newPhone) config.phone = newPhone;
+            }
 
-            localStorage.setItem('localProducts', JSON.stringify(products));
-            localStorage.setItem('localConfig', JSON.stringify(config));
-            
-            alert("¡Todo guardado correctamente!");
-            location.reload(); // Recarga para volver a modo cliente
+            // GUARDAR EN FIREBASE (NUBE)
+            db.ref('/').set({
+                products: products,
+                config: config
+            }).then(() => {
+                alert("¡Sincronizado con la nube!");
+                if(isEditMode) location.reload();
+            });
         }
     </script>
 </body>
