@@ -3,179 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutería Las Espinas - Premium</title>
+    <title>Frutería Las Espinas Bellas - Premium</title>
     <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Outfit:wght@300;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primario: #2d6a4f;
             --secundario: #ffca3a;
-            --fondo-gradiente: linear-gradient(135deg, #e9f5db 0%, #ffffff 100%);
-            --texto: #1b4332;
+            --blanco: #ffffff;
+            --fondo: #f8f9fa;
         }
 
         body {
             font-family: 'Outfit', sans-serif;
-            background: var(--fondo-gradiente);
-            color: var(--texto);
+            background-color: var(--fondo);
             margin: 0;
-            padding-bottom: 100px;
-            min-height: 100vh;
+            color: #333;
         }
 
-        /* Encabezado con imagen de fondo viva */
+        /* BARRA SUPERIOR Y BUSCADOR */
+        nav {
+            background: var(--primario);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .search-bar {
+            flex-grow: 0.5;
+            display: flex;
+            background: white;
+            border-radius: 20px;
+            padding: 5px 15px;
+        }
+
+        .search-bar input {
+            border: none;
+            width: 100%;
+            outline: none;
+            padding: 8px;
+        }
+
+        /* MENÚ DE CONFIGURACIÓN (HAMBURGUESA) */
+        .menu-icon {
+            cursor: pointer;
+            color: white;
+            font-size: 24px;
+            user-select: none;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            width: 200px;
+        }
+
+        .dropdown-menu button, .dropdown-menu a {
+            padding: 15px;
+            border: none;
+            background: none;
+            text-align: left;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            border-bottom: 1px solid #eee;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .dropdown-menu button:hover { background: #f0f0f0; }
+
+        /* HEADER Y LOGO */
         header {
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
-                        url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop');
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2000');
             background-size: cover;
             background-position: center;
             color: white;
-            padding: 80px 20px;
             text-align: center;
-            clip-path: ellipse(150% 100% at 50% 0%);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            padding: 60px 20px;
         }
 
-        header h1 { font-family: 'Crimson Pro', serif; font-size: 3.5rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-        header p { font-size: 1.2rem; opacity: 0.9; }
-
-        /* Controles de Navegación */
-        .nav-admin {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 100;
-        }
-
-        .btn-mode {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid white;
-            color: white;
-            padding: 10px 25px;
-            border-radius: 30px;
+        .logo-container img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--secundario);
+            margin-bottom: 15px;
+            object-fit: cover;
             cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
         }
 
-        .btn-mode:hover { background: var(--secundario); color: var(--texto); border-color: var(--secundario); }
-
-        /* Contenedor de Productos */
-        .container { max-width: 1200px; margin: -50px auto 0; padding: 0 20px; }
-        
+        /* CATALOGO */
+        .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
         .catalog { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-            gap: 30px; 
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+            gap: 25px; 
         }
 
         .card {
             background: white;
-            border-radius: 25px;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
-            transition: transform 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            transition: 0.3s;
         }
 
-        .card:hover { transform: translateY(-10px); }
-        .card img { width: 100%; height: 220px; object-fit: cover; }
-        
-        .card-info { padding: 25px; text-align: center; }
-        .card-info h3 { margin: 10px 0; font-family: 'Crimson Pro', serif; font-size: 1.6rem; color: var(--primario); }
-        .price { color: #555; font-weight: 600; font-size: 1.3rem; margin-bottom: 15px; }
+        .card img { width: 100%; height: 200px; object-fit: cover; }
+        .card-info { padding: 15px; text-align: center; }
 
-        /* Botón WhatsApp */
-        .ws-float {
+        /* MODAL TÉRMINOS Y CONDICIONES */
+        .modal {
             position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: #25d366;
-            color: white;
-            width: 65px;
-            height: 65px;
-            border-radius: 50%;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
             display: flex;
+            justify-content: center;
             align-items: center;
-            justify-content: center;
-            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
-            text-decoration: none;
-            font-size: 32px;
-            z-index: 1000;
-            transition: transform 0.3s;
+            z-index: 3000;
         }
 
-        .ws-float:hover { transform: scale(1.1); }
-
-        /* Barra de Administración */
-        .admin-panel {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
+        .modal-content {
             background: white;
-            padding: 20px;
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
-            display: none;
-            justify-content: center;
-            gap: 15px;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        /* SECCIÓN RESEÑAS */
+        .reviews { background: #fff; padding: 40px 20px; margin-top: 40px; border-radius: 20px; }
+        .review-item { border-bottom: 1px solid #eee; padding: 10px 0; }
+
+        /* PANEL DUEÑO */
+        #owner-panel {
+            position: fixed;
+            bottom: 0; width: 100%;
+            background: #222; color: white;
+            padding: 20px; display: none;
+            justify-content: center; gap: 10px;
             z-index: 2000;
-            flex-wrap: wrap;
-        }
-
-        .btn-admin {
-            padding: 12px 25px;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: 0.2s;
-        }
-
-        .btn-save { background: var(--primario); color: white; }
-        .btn-pass { background: #6c757d; color: white; }
-        .btn-add { background: var(--secundario); color: var(--texto); }
-
-        .edit-input {
-            width: 90%;
-            padding: 8px;
-            margin: 5px 0;
-            border: 1px dashed #2d6a4f;
-            border-radius: 8px;
-            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
 
-    <div class="nav-admin">
-        <button class="btn-mode" id="btn-owner" onclick="checkPassword()">Modo Dueño</button>
-        <button class="btn-mode" id="btn-client" onclick="exitAdmin()" style="display:none;">Volver a Comprador</button>
+    <div id="terms-modal" class="modal">
+        <div class="modal-content">
+            <h2>¡Bienvenido a Las Espinas! 🍎</h2>
+            <p>Para mejorar tu experiencia, recolectamos datos básicos según nuestras políticas de privacidad y términos de servicio.</p>
+            <button onclick="acceptTerms()" style="background: var(--primario); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer;">Aceptar y Continuar</button>
+        </div>
     </div>
 
+    <nav>
+        <div style="color: white; font-weight: bold; font-size: 1.2rem;">Espinas Bellas</div>
+        
+        <div class="search-bar">
+            <input type="text" id="search" placeholder="Buscar fruta..." onkeyup="filterProducts()">
+        </div>
+
+        <div class="menu-icon" onclick="toggleMenu()">☰</div>
+        <div class="dropdown-menu" id="nav-menu">
+            <button onclick="alert('Función de registro próximamente')">Registrarse / Acceder</button>
+            <button onclick="checkOwner()">Modo Dueño</button>
+            <button onclick="exitOwner()" id="btn-exit" style="display:none; color: red;">Salir Modo Dueño</button>
+        </div>
+    </nav>
+
     <header>
-        <h1 id="biz-name" contenteditable="false">Cargando...</h1>
-        <p id="biz-slogan" contenteditable="false">Cargando...</p>
+        <div class="logo-container">
+            <img id="web-logo" src="https://via.placeholder.com/150?text=LOGO" alt="Logo" onclick="changeLogo()">
+        </div>
+        <h1 id="biz-name">Cargando...</h1>
+        <p id="biz-slogan">Cargando...</p>
     </header>
 
     <div class="container">
-        <div class="catalog" id="main-catalog">
+        <div class="catalog" id="catalog">
             </div>
+
+        <div class="reviews">
+            <h3>Reseñas de Clientes</h3>
+            <div id="review-list"></div>
+            <div style="margin-top: 20px;">
+                <input type="text" id="rev-name" placeholder="Tu nombre" style="padding: 8px; border-radius: 5px; border: 1px solid #ccc;">
+                <input type="text" id="rev-text" placeholder="Escribe un comentario..." style="padding: 8px; border-radius: 5px; border: 1px solid #ccc; width: 60%;">
+                <button onclick="addReview()" style="background: var(--primario); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer;">Publicar</button>
+            </div>
+        </div>
     </div>
 
-    <a href="https://wa.me/573223753362?text=Hola!%20Me%20interesa%20comprar%20frutas" class="ws-float" target="_blank">📲</a>
-
-    <div class="admin-panel" id="admin-panel">
-        <button class="btn-admin btn-add" onclick="addProduct()">➕ Añadir Producto</button>
-        <button class="btn-admin btn-pass" onclick="changeKey()">🔑 Cambiar Clave</button>
-        <button class="btn-admin btn-save" onclick="syncCloud()">💾 GUARDAR CAMBIOS</button>
+    <div id="owner-panel">
+        <input type="text" id="edit-whatsapp" placeholder="Número WhatsApp (ej: 57310...)" style="padding: 5px;">
+        <button onclick="addProduct()" style="background: var(--secundario);">+ Producto</button>
+        <button onclick="changeKey()" style="background: #666; color: white;">Clave</button>
+        <button onclick="saveAll()" style="background: #2d6a4f; color: white; font-weight: bold;">GUARDAR CAMBIOS</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <script>
-        // Configuración de tu proyecto (Samuel David Espinosa Bello)
         const firebaseConfig = {
             apiKey: "AIzaSyAOcuj_tFSsKKqKXtggvrrZgWDAPqt2uEk",
             authDomain: "fruteria-las-espinas.firebaseapp.com",
@@ -188,99 +227,111 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        let localProducts = [];
-        let localConfig = { nombre: "Frutería Las Espinas", lema: "Las mejores frutas de la región", clave: "1234" };
-        let isAdmin = false;
 
-        // Escuchar cambios en tiempo real
-        db.ref('/').on('value', (snap) => {
-            const data = snap.val();
-            if (data) {
-                localProducts = data.productos || [];
-                localConfig = data.config || localConfig;
-                renderApp();
+        let dataLocal = { productos: [], config: { nombre: "Frutería Las Espinas", lema: "Frescura total", clave: "1234", whatsapp: "573000000000", logo: "" }, reseñas: [] };
+        let isOwner = false;
+
+        db.ref('/').on('value', snap => {
+            if(snap.val()) {
+                dataLocal = snap.val();
+                if(!dataLocal.reseñas) dataLocal.reseñas = [];
+                render();
             }
         });
 
-        function renderApp() {
-            document.getElementById('biz-name').innerText = localConfig.nombre;
-            document.getElementById('biz-slogan').innerText = localConfig.lema;
-            
-            const container = document.getElementById('main-catalog');
-            container.innerHTML = '';
+        function render() {
+            document.getElementById('biz-name').innerText = dataLocal.config.nombre;
+            document.getElementById('biz-slogan').innerText = dataLocal.config.lema;
+            document.getElementById('edit-whatsapp').value = dataLocal.config.whatsapp || "";
+            if(dataLocal.config.logo) document.getElementById('web-logo').src = dataLocal.config.logo;
 
-            localProducts.forEach((p, index) => {
+            const cat = document.getElementById('catalog');
+            cat.innerHTML = '';
+            dataLocal.productos.forEach((p, i) => {
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
-                    <img src="${p.imagen || 'https://via.placeholder.com/300'}" alt="fruta">
+                    <img src="${p.imagen}">
                     <div class="card-info">
-                        ${isAdmin ? `<input class="edit-input" placeholder="Pegar link de imagen real" value="${p.imagen}" oninput="localProducts[${index}].imagen=this.value">` : ''}
-                        <h3 contenteditable="${isAdmin}" oninput="localProducts[${index}].nombre=this.innerText">${p.nombre}</h3>
-                        <p class="price" contenteditable="${isAdmin}" oninput="localProducts[${index}].precio=this.innerText">${p.precio}</p>
-                        ${isAdmin ? `<button onclick="removeProduct(${index})" style="background:none; border:none; color:red; cursor:pointer;">✖ Eliminar</button>` : ''}
+                        <h3 contenteditable="${isOwner}" oninput="dataLocal.productos[${i}].nombre=this.innerText">${p.nombre}</h3>
+                        <p contenteditable="${isOwner}" oninput="dataLocal.productos[${i}].precio=this.innerText">${p.precio}</p>
+                        ${isOwner ? `<button onclick="removeP(${i})">Eliminar</button>` : `<a href="https://wa.me/${dataLocal.config.whatsapp}?text=Deseo ${p.nombre}" target="_blank" style="color: green; text-decoration: none; font-weight: bold;">Pedir</a>`}
                     </div>
                 `;
-                container.appendChild(card);
+                cat.appendChild(card);
+            });
+
+            const revList = document.getElementById('review-list');
+            revList.innerHTML = dataLocal.reseñas.map(r => `<div class="review-item"><strong>${r.nombre}:</strong> ${r.texto}</div>`).join('');
+        }
+
+        function toggleMenu() {
+            const m = document.getElementById('nav-menu');
+            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function checkOwner() {
+            const p = prompt("Clave de dueño:");
+            if(p === dataLocal.config.clave) {
+                isOwner = true;
+                document.getElementById('owner-panel').style.display = 'flex';
+                document.getElementById('btn-exit').style.display = 'block';
+                toggleMenu();
+                render();
+            }
+        }
+
+        function exitOwner() {
+            isOwner = false;
+            document.getElementById('owner-panel').style.display = 'none';
+            document.getElementById('btn-exit').style.display = 'none';
+            render();
+        }
+
+        function filterProducts() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const cards = document.querySelectorAll('.card');
+            cards.forEach(c => {
+                const txt = c.innerText.toLowerCase();
+                c.style.display = txt.includes(q) ? 'block' : 'none';
             });
         }
 
-        function checkPassword() {
-            const pass = prompt("Ingrese la clave de administrador:");
-            if (pass === localConfig.clave) {
-                enterAdminMode();
-            } else {
-                alert("Clave incorrecta ❌");
+        function addReview() {
+            const n = document.getElementById('rev-name').value;
+            const t = document.getElementById('rev-text').value;
+            if(n && t) {
+                dataLocal.reseñas.push({ nombre: n, texto: t });
+                saveAll();
+                document.getElementById('rev-name').value = '';
+                document.getElementById('rev-text').value = '';
             }
         }
 
-        function enterAdminMode() {
-            isAdmin = true;
-            document.getElementById('btn-owner').style.display = 'none';
-            document.getElementById('btn-client').style.display = 'block';
-            document.getElementById('admin-panel').style.display = 'flex';
-            document.getElementById('biz-name').contentEditable = true;
-            document.getElementById('biz-slogan').contentEditable = true;
-            renderApp();
+        function changeLogo() {
+            if(!isOwner) return;
+            const url = prompt("Pega el link de la nueva imagen de logo:");
+            if(url) dataLocal.config.logo = url;
+            render();
         }
 
-        function exitAdmin() {
-            isAdmin = false;
-            document.getElementById('btn-owner').style.display = 'block';
-            document.getElementById('btn-client').style.display = 'none';
-            document.getElementById('admin-panel').style.display = 'none';
-            document.getElementById('biz-name').contentEditable = false;
-            document.getElementById('biz-slogan').contentEditable = false;
-            renderApp();
+        function acceptTerms() { document.getElementById('terms-modal').style.display = 'none'; }
+
+        function saveAll() {
+            dataLocal.config.whatsapp = document.getElementById('edit-whatsapp').value;
+            db.ref('/').set(dataLocal).then(() => alert("Datos guardados en la nube"));
         }
 
         function addProduct() {
-            localProducts.push({ nombre: "Nueva Fruta", precio: "$0", imagen: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2070&auto=format&fit=crop" });
-            renderApp();
+            dataLocal.productos.push({ nombre: "Nueva Fruta", precio: "$0", imagen: "https://via.placeholder.com/300" });
+            render();
         }
-
-        function removeProduct(i) {
-            localProducts.splice(i, 1);
-            renderApp();
-        }
-
+        
+        function removeP(i) { dataLocal.productos.splice(i, 1); render(); }
+        
         function changeKey() {
-            const nueva = prompt("Escriba su nueva clave de acceso:");
-            if (nueva && nueva.length > 0) {
-                localConfig.clave = nueva;
-                alert("Clave preparada. No olvide Guardar Cambios para aplicarla.");
-            }
-        }
-
-        function syncCloud() {
-            localConfig.nombre = document.getElementById('biz-name').innerText;
-            localConfig.lema = document.getElementById('biz-slogan').innerText;
-            
-            db.ref('/').set({
-                productos: localProducts,
-                config: localConfig
-            }).then(() => alert("✅ ¡Web actualizada exitosamente!"));
+            const n = prompt("Nueva clave:");
+            if(n) dataLocal.config.clave = n;
         }
     </script>
 </body>
