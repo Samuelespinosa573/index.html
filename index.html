@@ -3,31 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutería Las Espinas</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <title>Frutería Las Espinas - Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;700&family=Outfit:wght@300;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Poppins', sans-serif; background: #f4f4f4; padding-bottom: 80px; }
-        header { background: #2d6a4f; color: white; padding: 40px; text-align: center; }
-        .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; padding: 20px; }
-        .card { background: white; border-radius: 10px; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card img { width: 100%; border-radius: 5px; }
-        .admin-btn { position: fixed; top: 10px; right: 10px; z-index: 100; padding: 10px; background: #ffca3a; border: none; cursor: pointer; }
-        .save-bar { position: fixed; bottom: 0; width: 100%; background: #ffca3a; padding: 15px; text-align: center; display: none; }
+        :root {
+            --primario: #2d6a4f;
+            --secundario: #ffca3a;
+            --fondo: #f8f9fa;
+            --texto: #1b4332;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #e9f5db 0%, #ffffff 100%);
+            color: var(--texto);
+            margin: 0;
+            padding-bottom: 100px;
+        }
+
+        /* Encabezado con imagen de fondo */
+        header {
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
+                        url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+            clip-path: ellipse(150% 100% at 50% 0%);
+        }
+
+        header h1 { font-family: 'Crimson Pro', serif; font-size: 3.5rem; margin: 0; }
+
+        /* Controles de Modo */
+        .nav-admin {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-mode {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(5px);
+            border: 1px solid white;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-mode:hover { background: var(--secundario); color: var(--texto); }
+
+        /* Catálogo */
+        .container { max-width: 1100px; margin: -50px auto 0; padding: 0 20px; }
+        .catalog { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 25px; 
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+        .card:hover { transform: translateY(-10px); }
+        .card img { width: 100%; height: 200px; object-fit: cover; }
+        
+        .card-info { padding: 20px; text-align: center; }
+        .card-info h3 { margin: 10px 0; font-family: 'Crimson Pro', serif; font-size: 1.5rem; }
+        .price { color: var(--primario); font-weight: 700; font-size: 1.2rem; }
+
+        /* Inputs en modo edición */
+        .edit-input {
+            width: 90%;
+            border: 1px dashed #ccc;
+            padding: 5px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+
+        /* Botón WhatsApp */
+        .ws-float {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #25d366;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            text-decoration: none;
+            font-size: 30px;
+            z-index: 1000;
+        }
+
+        /* Barra de Guardado */
+        .save-panel {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+            display: none;
+            justify-content: center;
+            gap: 20px;
+            z-index: 2000;
+        }
+
+        .btn-save { background: var(--primario); color: white; border: none; padding: 12px 30px; border-radius: 10px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <button class="admin-btn" onclick="entrar()">Modo Dueño</button>
+    <div class="nav-admin">
+        <button class="btn-mode" id="btn-owner" onclick="toggleAdmin()">Modo Dueño</button>
+        <button class="btn-mode" id="btn-client" onclick="exitAdmin()" style="display:none;">Volver a Comprador</button>
+    </div>
 
     <header>
-        <h1 id="n-negocio">Cargando...</h1>
-        <p id="l-negocio">Cargando...</p>
+        <h1 id="biz-name">Cargando...</h1>
+        <p id="biz-slogan">Cargando...</p>
     </header>
 
-    <div class="catalog" id="contenedor"></div>
+    <div class="container">
+        <div class="catalog" id="main-catalog"></div>
+    </div>
 
-    <div class="save-bar" id="barra-guardar">
-        <button onclick="guardar()">💾 GUARDAR CAMBIOS</button>
+    <a href="https://wa.me/573000000000" class="ws-float" target="_blank">📲</a>
+
+    <div class="save-panel" id="save-panel">
+        <button class="btn-save" onclick="saveAll()">💾 GUARDAR TODO</button>
+        <button class="btn-save" style="background:#666" onclick="changePass()">🔑 CAMBIAR CLAVE</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -46,60 +165,83 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let editando = false;
-        let misProductos = [];
-        let miConfig = {};
+        let isEdit = false;
+        let products = [];
+        let config = {};
 
-        db.ref('/').on('value', (snap) => {
-            const data = snap.val();
+        db.ref('/').on('value', (snapshot) => {
+            const data = snapshot.val();
             if (data) {
-                misProductos = data.productos || [];
-                miConfig = data.config || { nombre: "Frutería", lema: "Frutas frescas" };
-                dibujar();
+                products = data.productos || [];
+                config = data.config || { nombre: "Frutería", lema: "Frescura", clave: "1234" };
+                render();
             }
         });
 
-        function dibujar() {
-            document.getElementById('n-negocio').innerText = miConfig.nombre;
-            document.getElementById('l-negocio').innerText = miConfig.lema;
-            const caja = document.getElementById('contenedor');
-            caja.innerHTML = '';
+        function render() {
+            document.getElementById('biz-name').innerText = config.nombre;
+            document.getElementById('biz-slogan').innerText = config.lema;
+            const container = document.getElementById('main-catalog');
+            container.innerHTML = '';
 
-            misProductos.forEach((p, i) => {
-                caja.innerHTML += `
+            products.forEach((p, i) => {
+                container.innerHTML += `
                     <div class="card">
                         <img src="${p.imagen}">
-                        <h3 contenteditable="${editando}" oninput="misProductos[${i}].nombre=this.innerText">${p.nombre}</h3>
-                        <p contenteditable="${editando}" oninput="misProductos[${i}].precio=this.innerText">${p.precio}</p>
+                        <div class="card-info">
+                            ${isEdit ? `<input class="edit-input" value="${p.imagen}" oninput="products[${i}].imagen=this.value" placeholder="URL de imagen">` : ''}
+                            <h3 contenteditable="${isEdit}" oninput="products[${i}].nombre=this.innerText">${p.nombre}</h3>
+                            <p class="price" contenteditable="${isEdit}" oninput="products[${i}].precio=this.innerText">${p.precio}</p>
+                            ${isEdit ? `<button onclick="remove(${i})" style="color:red;border:none;background:none;cursor:pointer;">Eliminar</button>` : ''}
+                        </div>
                     </div>`;
             });
 
-            if(editando) {
-                caja.innerHTML += `<div onclick="nuevo()" style="border:2px dashed #333; padding:20px; cursor:pointer;">+ Añadir</div>`;
+            if(isEdit) {
+                container.innerHTML += `<div class="card" onclick="add()" style="border:3px dashed #ccc; display:flex; align-items:center; justify-content:center; min-height:200px; cursor:pointer;"><h2>+ Añadir</h2></div>`;
             }
         }
 
-        function entrar() {
-            let clave = prompt("Clave:");
-            if(clave === "1234") {
-                editando = true;
-                document.getElementById('barra-guardar').style.display = 'block';
-                document.getElementById('n-negocio').contentEditable = true;
-                document.getElementById('l-negocio').contentEditable = true;
-                dibujar();
-            }
+        function toggleAdmin() {
+            let pass = prompt("Introduce la clave:");
+            if(pass === config.clave) {
+                isEdit = true;
+                document.getElementById('btn-owner').style.display = 'none';
+                document.getElementById('btn-client').style.display = 'block';
+                document.getElementById('save-panel').style.display = 'flex';
+                document.getElementById('biz-name').contentEditable = true;
+                document.getElementById('biz-slogan').contentEditable = true;
+                render();
+            } else { alert("Clave incorrecta"); }
         }
 
-        function nuevo() {
-            misProductos.push({ nombre: "Nueva Fruta", precio: "$0", imagen: "https://via.placeholder.com/150" });
-            dibujar();
+        function exitAdmin() {
+            isEdit = false;
+            document.getElementById('btn-owner').style.display = 'block';
+            document.getElementById('btn-client').style.display = 'none';
+            document.getElementById('save-panel').style.display = 'none';
+            document.getElementById('biz-name').contentEditable = false;
+            document.getElementById('biz-slogan').contentEditable = false;
+            render();
         }
 
-        function guardar() {
-            miConfig.nombre = document.getElementById('n-negocio').innerText;
-            miConfig.lema = document.getElementById('l-negocio').innerText;
-            db.ref('/').set({ productos: misProductos, config: miConfig })
-                .then(() => alert("¡Guardado en la nube!"));
+        function add() {
+            products.push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/300" });
+            render();
+        }
+
+        function remove(i) { products.splice(i, 1); render(); }
+
+        function changePass() {
+            let nueva = prompt("Nueva clave:");
+            if(nueva) { config.clave = nueva; alert("Clave lista para guardar"); }
+        }
+
+        function saveAll() {
+            config.nombre = document.getElementById('biz-name').innerText;
+            config.lema = document.getElementById('biz-slogan').innerText;
+            db.ref('/').set({ productos: products, config: config })
+                .then(() => alert("¡Todo actualizado!"));
         }
     </script>
 </body>
