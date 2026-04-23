@@ -9,19 +9,20 @@
         :root {
             --primario: #2d6a4f;
             --secundario: #ffca3a;
-            --fondo: #f8f9fa;
+            --fondo-gradiente: linear-gradient(135deg, #e9f5db 0%, #ffffff 100%);
             --texto: #1b4332;
         }
 
         body {
             font-family: 'Outfit', sans-serif;
-            background: linear-gradient(135deg, #e9f5db 0%, #ffffff 100%);
+            background: var(--fondo-gradiente);
             color: var(--texto);
             margin: 0;
             padding-bottom: 100px;
+            min-height: 100vh;
         }
 
-        /* Encabezado con imagen de fondo */
+        /* Encabezado con imagen de fondo viva */
         header {
             background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), 
                         url('https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop');
@@ -31,64 +32,58 @@
             padding: 80px 20px;
             text-align: center;
             clip-path: ellipse(150% 100% at 50% 0%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        header h1 { font-family: 'Crimson Pro', serif; font-size: 3.5rem; margin: 0; }
+        header h1 { font-family: 'Crimson Pro', serif; font-size: 3.5rem; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        header p { font-size: 1.2rem; opacity: 0.9; }
 
-        /* Controles de Modo */
+        /* Controles de Navegación */
         .nav-admin {
             position: absolute;
             top: 20px;
             right: 20px;
-            display: flex;
-            gap: 10px;
+            z-index: 100;
         }
 
         .btn-mode {
             background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(10px);
             border: 1px solid white;
             color: white;
-            padding: 10px 20px;
+            padding: 10px 25px;
             border-radius: 30px;
             cursor: pointer;
-            transition: 0.3s;
+            font-weight: 600;
+            transition: all 0.3s;
         }
 
-        .btn-mode:hover { background: var(--secundario); color: var(--texto); }
+        .btn-mode:hover { background: var(--secundario); color: var(--texto); border-color: var(--secundario); }
 
-        /* Catálogo */
-        .container { max-width: 1100px; margin: -50px auto 0; padding: 0 20px; }
+        /* Contenedor de Productos */
+        .container { max-width: 1200px; margin: -50px auto 0; padding: 0 20px; }
+        
         .catalog { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-            gap: 25px; 
+            gap: 30px; 
         }
 
         .card {
             background: white;
-            border-radius: 20px;
+            border-radius: 25px;
             overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-            transition: transform 0.3s;
-            position: relative;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
         .card:hover { transform: translateY(-10px); }
-        .card img { width: 100%; height: 200px; object-fit: cover; }
+        .card img { width: 100%; height: 220px; object-fit: cover; }
         
-        .card-info { padding: 20px; text-align: center; }
-        .card-info h3 { margin: 10px 0; font-family: 'Crimson Pro', serif; font-size: 1.5rem; }
-        .price { color: var(--primario); font-weight: 700; font-size: 1.2rem; }
-
-        /* Inputs en modo edición */
-        .edit-input {
-            width: 90%;
-            border: 1px dashed #ccc;
-            padding: 5px;
-            margin: 5px 0;
-            border-radius: 5px;
-        }
+        .card-info { padding: 25px; text-align: center; }
+        .card-info h3 { margin: 10px 0; font-family: 'Crimson Pro', serif; font-size: 1.6rem; color: var(--primario); }
+        .price { color: #555; font-weight: 600; font-size: 1.3rem; margin-bottom: 15px; }
 
         /* Botón WhatsApp */
         .ws-float {
@@ -97,62 +92,90 @@
             right: 30px;
             background: #25d366;
             color: white;
-            width: 60px;
-            height: 60px;
+            width: 65px;
+            height: 65px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
             text-decoration: none;
-            font-size: 30px;
+            font-size: 32px;
             z-index: 1000;
+            transition: transform 0.3s;
         }
 
-        /* Barra de Guardado */
-        .save-panel {
+        .ws-float:hover { transform: scale(1.1); }
+
+        /* Barra de Administración */
+        .admin-panel {
             position: fixed;
             bottom: 0;
+            left: 0;
             width: 100%;
             background: white;
             padding: 20px;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.1);
             display: none;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             z-index: 2000;
+            flex-wrap: wrap;
         }
 
-        .btn-save { background: var(--primario); color: white; border: none; padding: 12px 30px; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-admin {
+            padding: 12px 25px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .btn-save { background: var(--primario); color: white; }
+        .btn-pass { background: #6c757d; color: white; }
+        .btn-add { background: var(--secundario); color: var(--texto); }
+
+        .edit-input {
+            width: 90%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px dashed #2d6a4f;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
 
     <div class="nav-admin">
-        <button class="btn-mode" id="btn-owner" onclick="toggleAdmin()">Modo Dueño</button>
+        <button class="btn-mode" id="btn-owner" onclick="checkPassword()">Modo Dueño</button>
         <button class="btn-mode" id="btn-client" onclick="exitAdmin()" style="display:none;">Volver a Comprador</button>
     </div>
 
     <header>
-        <h1 id="biz-name">Cargando...</h1>
-        <p id="biz-slogan">Cargando...</p>
+        <h1 id="biz-name" contenteditable="false">Cargando...</h1>
+        <p id="biz-slogan" contenteditable="false">Cargando...</p>
     </header>
 
     <div class="container">
-        <div class="catalog" id="main-catalog"></div>
+        <div class="catalog" id="main-catalog">
+            </div>
     </div>
 
-    <a href="https://wa.me/573000000000" class="ws-float" target="_blank">📲</a>
+    <a href="https://wa.me/573000000000?text=Hola!%20Me%20interesa%20comprar%20frutas" class="ws-float" target="_blank">📲</a>
 
-    <div class="save-panel" id="save-panel">
-        <button class="btn-save" onclick="saveAll()">💾 GUARDAR TODO</button>
-        <button class="btn-save" style="background:#666" onclick="changePass()">🔑 CAMBIAR CLAVE</button>
+    <div class="admin-panel" id="admin-panel">
+        <button class="btn-admin btn-add" onclick="addProduct()">➕ Añadir Producto</button>
+        <button class="btn-admin btn-pass" onclick="changeKey()">🔑 Cambiar Clave</button>
+        <button class="btn-admin btn-save" onclick="syncCloud()">💾 GUARDAR CAMBIOS</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <script>
+        // Configuración de tu proyecto (Samuel David Espinosa Bello)
         const firebaseConfig = {
             apiKey: "AIzaSyAOcuj_tFSsKKqKXtggvrrZgWDAPqt2uEk",
             authDomain: "fruteria-las-espinas.firebaseapp.com",
@@ -165,83 +188,99 @@
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let isEdit = false;
-        let products = [];
-        let config = {};
+        
+        let localProducts = [];
+        let localConfig = { nombre: "Frutería Las Espinas", lema: "Las mejores frutas de la región", clave: "1234" };
+        let isAdmin = false;
 
-        db.ref('/').on('value', (snapshot) => {
-            const data = snapshot.val();
+        // Escuchar cambios en tiempo real
+        db.ref('/').on('value', (snap) => {
+            const data = snap.val();
             if (data) {
-                products = data.productos || [];
-                config = data.config || { nombre: "Frutería", lema: "Frescura", clave: "1234" };
-                render();
+                localProducts = data.productos || [];
+                localConfig = data.config || localConfig;
+                renderApp();
             }
         });
 
-        function render() {
-            document.getElementById('biz-name').innerText = config.nombre;
-            document.getElementById('biz-slogan').innerText = config.lema;
+        function renderApp() {
+            document.getElementById('biz-name').innerText = localConfig.nombre;
+            document.getElementById('biz-slogan').innerText = localConfig.lema;
+            
             const container = document.getElementById('main-catalog');
             container.innerHTML = '';
 
-            products.forEach((p, i) => {
-                container.innerHTML += `
-                    <div class="card">
-                        <img src="${p.imagen}">
-                        <div class="card-info">
-                            ${isEdit ? `<input class="edit-input" value="${p.imagen}" oninput="products[${i}].imagen=this.value" placeholder="URL de imagen">` : ''}
-                            <h3 contenteditable="${isEdit}" oninput="products[${i}].nombre=this.innerText">${p.nombre}</h3>
-                            <p class="price" contenteditable="${isEdit}" oninput="products[${i}].precio=this.innerText">${p.precio}</p>
-                            ${isEdit ? `<button onclick="remove(${i})" style="color:red;border:none;background:none;cursor:pointer;">Eliminar</button>` : ''}
-                        </div>
-                    </div>`;
+            localProducts.forEach((p, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${p.imagen || 'https://via.placeholder.com/300'}" alt="fruta">
+                    <div class="card-info">
+                        ${isAdmin ? `<input class="edit-input" placeholder="Pegar link de imagen real" value="${p.imagen}" oninput="localProducts[${index}].imagen=this.value">` : ''}
+                        <h3 contenteditable="${isAdmin}" oninput="localProducts[${index}].nombre=this.innerText">${p.nombre}</h3>
+                        <p class="price" contenteditable="${isAdmin}" oninput="localProducts[${index}].precio=this.innerText">${p.precio}</p>
+                        ${isAdmin ? `<button onclick="removeProduct(${index})" style="background:none; border:none; color:red; cursor:pointer;">✖ Eliminar</button>` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
             });
+        }
 
-            if(isEdit) {
-                container.innerHTML += `<div class="card" onclick="add()" style="border:3px dashed #ccc; display:flex; align-items:center; justify-content:center; min-height:200px; cursor:pointer;"><h2>+ Añadir</h2></div>`;
+        function checkPassword() {
+            const pass = prompt("Ingrese la clave de administrador:");
+            if (pass === localConfig.clave) {
+                enterAdminMode();
+            } else {
+                alert("Clave incorrecta ❌");
             }
         }
 
-        function toggleAdmin() {
-            let pass = prompt("Introduce la clave:");
-            if(pass === config.clave) {
-                isEdit = true;
-                document.getElementById('btn-owner').style.display = 'none';
-                document.getElementById('btn-client').style.display = 'block';
-                document.getElementById('save-panel').style.display = 'flex';
-                document.getElementById('biz-name').contentEditable = true;
-                document.getElementById('biz-slogan').contentEditable = true;
-                render();
-            } else { alert("Clave incorrecta"); }
+        function enterAdminMode() {
+            isAdmin = true;
+            document.getElementById('btn-owner').style.display = 'none';
+            document.getElementById('btn-client').style.display = 'block';
+            document.getElementById('admin-panel').style.display = 'flex';
+            document.getElementById('biz-name').contentEditable = true;
+            document.getElementById('biz-slogan').contentEditable = true;
+            renderApp();
         }
 
         function exitAdmin() {
-            isEdit = false;
+            isAdmin = false;
             document.getElementById('btn-owner').style.display = 'block';
             document.getElementById('btn-client').style.display = 'none';
-            document.getElementById('save-panel').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'none';
             document.getElementById('biz-name').contentEditable = false;
             document.getElementById('biz-slogan').contentEditable = false;
-            render();
+            renderApp();
         }
 
-        function add() {
-            products.push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/300" });
-            render();
+        function addProduct() {
+            localProducts.push({ nombre: "Nueva Fruta", precio: "$0", imagen: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2070&auto=format&fit=crop" });
+            renderApp();
         }
 
-        function remove(i) { products.splice(i, 1); render(); }
-
-        function changePass() {
-            let nueva = prompt("Nueva clave:");
-            if(nueva) { config.clave = nueva; alert("Clave lista para guardar"); }
+        function removeProduct(i) {
+            localProducts.splice(i, 1);
+            renderApp();
         }
 
-        function saveAll() {
-            config.nombre = document.getElementById('biz-name').innerText;
-            config.lema = document.getElementById('biz-slogan').innerText;
-            db.ref('/').set({ productos: products, config: config })
-                .then(() => alert("¡Todo actualizado!"));
+        function changeKey() {
+            const nueva = prompt("Escriba su nueva clave de acceso:");
+            if (nueva && nueva.length > 0) {
+                localConfig.clave = nueva;
+                alert("Clave preparada. No olvide Guardar Cambios para aplicarla.");
+            }
+        }
+
+        function syncCloud() {
+            localConfig.nombre = document.getElementById('biz-name').innerText;
+            localConfig.lema = document.getElementById('biz-slogan').innerText;
+            
+            db.ref('/').set({
+                productos: localProducts,
+                config: localConfig
+            }).then(() => alert("✅ ¡Web actualizada exitosamente!"));
         }
     </script>
 </body>
