@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutería Las Espinas Bellas - Master Pro</title>
+    <title>Frutería Las Espinas Bellas - Seguridad Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,10 +12,9 @@
             --peligro: #ff4757;
             --fondo: #f4f7f6;
             --oscuro: #1a1a1a;
-            --blanco: #ffffff;
         }
 
-        body { font-family: 'Outfit', sans-serif; background-color: var(--fondo); margin: 0; padding-bottom: 100px; transition: 0.3s; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--fondo); margin: 0; padding-bottom: 100px; }
 
         /* NAVEGACIÓN */
         nav {
@@ -26,13 +25,8 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        .user-nav-profile {
-            display: flex; align-items: center; gap: 12px; color: white; cursor: pointer; position: relative;
-        }
-        .user-nav-profile img { 
-            width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--secundario); 
-            object-fit: cover; background: white;
-        }
+        .user-nav-profile { display: flex; align-items: center; gap: 12px; color: white; cursor: pointer; position: relative; }
+        .user-nav-profile img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--secundario); object-fit: cover; background: white; }
 
         .dropdown-content {
             display: none; position: absolute; top: 55px; right: 0; background: white;
@@ -46,54 +40,25 @@
             background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2000');
             background-size: cover; background-position: center; text-align: center; padding: 60px 20px; color: white;
         }
-        #web-logo { 
-            width: 130px; height: 130px; border-radius: 50%; border: 5px solid var(--secundario); 
-            cursor: pointer; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-        }
+        #web-logo { width: 130px; height: 130px; border-radius: 50%; border: 5px solid var(--secundario); cursor: pointer; object-fit: cover; }
 
         /* CATÁLOGO */
-        .catalog { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
-            gap: 30px; padding: 40px 20px; max-width: 1200px; margin: auto;
-        }
+        .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px; padding: 40px 20px; max-width: 1200px; margin: auto; }
         .card { background: white; border-radius: 18px; overflow: hidden; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.08); transition: 0.3s; }
         .card img { width: 100%; height: 200px; object-fit: cover; }
         .card-body { padding: 20px; }
 
-        /* RESEÑAS */
-        #review-box {
-            position: fixed; bottom: 95px; right: 25px; width: 300px;
-            background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-            border: 2px solid var(--primario); z-index: 900; overflow: hidden;
-        }
-        .review-header { background: var(--primario); color: white; padding: 12px; text-align: center; font-weight: bold; }
-        #review-list { max-height: 180px; overflow-y: auto; padding: 15px; font-size: 0.9em; }
-        .rev-item { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid var(--secundario); position: relative; }
-
         /* MODALES */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px);
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); }
         .modal-card { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
         .modal-card input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
 
-        /* BARRA ADMIN (MODO JEFE) */
-        #admin-bar {
-            position: fixed; bottom: 0; width: 100%; background: var(--oscuro); color: white;
-            padding: 15px; display: none; justify-content: space-around; align-items: center; z-index: 1500;
-        }
-
-        /* ICONO HAMBURGUESA */
+        /* BARRA ADMIN */
+        #admin-bar { position: fixed; bottom: 0; width: 100%; background: var(--oscuro); color: white; padding: 15px; display: none; justify-content: space-around; align-items: center; z-index: 1500; }
         .menu-icon { cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 10px; }
         .menu-icon span { width: 28px; height: 3px; background: white; border-radius: 2px; }
 
-        /* MENÚ LATERAL ADMIN */
-        .admin-sidebar {
-            position: fixed; bottom: 80px; left: 20px; background: white; color: #333;
-            width: 280px; border-radius: 15px; box-shadow: 0 -5px 25px rgba(0,0,0,0.3);
-            display: none; flex-direction: column; padding: 20px; z-index: 1600;
-        }
+        .admin-sidebar { position: fixed; bottom: 80px; left: 20px; background: white; color: #333; width: 280px; border-radius: 15px; box-shadow: 0 -5px 25px rgba(0,0,0,0.3); display: none; flex-direction: column; padding: 20px; z-index: 1600; }
 
         /* BOTONES */
         .btn { border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
@@ -126,13 +91,13 @@
         </div>
     </nav>
 
-    <div id="modal-terms" class="modal-overlay">
+    <div id="modal-login" class="modal-overlay">
         <div class="modal-card">
-            <h2>📜 Términos y Condiciones</h2>
-            <div style="text-align: left; font-size: 0.85em; background: #f4f4f4; padding: 15px; border-radius: 10px; margin: 15px 0;">
-                Aceptas que guardemos tus datos para gestionar pedidos y que verifiquemos tu identidad para seguridad de la tienda.
-            </div>
-            <button class="btn btn-acc" style="width: 100%;" onclick="closeModal('modal-terms'); openModal('modal-register')">Aceptar y Continuar</button>
+            <h2>Iniciar Sesión</h2>
+            <input type="text" id="login-id" placeholder="Correo o Usuario">
+            <input type="password" id="login-pass" placeholder="Contraseña">
+            <button class="btn btn-acc" style="width: 100%;" onclick="loginAll()">Entrar</button>
+            <button onclick="closeModal('modal-login')" style="color:red; background:none; border:none; margin-top:10px; cursor:pointer;">Cerrar</button>
         </div>
     </div>
 
@@ -143,18 +108,15 @@
             <input type="email" id="reg-email" placeholder="Correo Electrónico">
             <input type="password" id="reg-pass" placeholder="Contraseña">
             <button class="btn btn-acc" style="width: 100%;" onclick="registerClient()">Registrarme</button>
-            <button onclick="closeModal('modal-register')" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px;">Cancelar</button>
+            <button onclick="closeModal('modal-register')" style="color:red; background:none; border:none; margin-top:10px; cursor:pointer;">Cancelar</button>
         </div>
     </div>
 
-    <div id="modal-login" class="modal-overlay">
+    <div id="modal-terms" class="modal-overlay">
         <div class="modal-card">
-            <h2>Iniciar Sesión</h2>
-            <p style="font-size: 0.9em; color: #666;">Ingresa con tus datos de cliente o jefe</p>
-            <input type="text" id="login-id" placeholder="Usuario o Correo">
-            <input type="password" id="login-pass" placeholder="Contraseña">
-            <button class="btn btn-acc" style="width: 100%;" onclick="loginAll()">Entrar</button>
-            <button onclick="closeModal('modal-login')" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px;">Volver</button>
+            <h2>📜 Términos y Condiciones</h2>
+            <p>Aceptas que guardemos tus datos para gestionar pedidos de forma segura.</p>
+            <button class="btn btn-acc" style="width: 100%;" onclick="closeModal('modal-terms'); openModal('modal-register')">Aceptar y Continuar</button>
         </div>
     </div>
 
@@ -166,35 +128,22 @@
 
     <div class="catalog" id="catalog"></div>
 
-    <div id="review-box">
-        <div class="review-header">Opiniones</div>
-        <div id="review-list"></div>
-        <div style="padding: 10px; display: flex; gap: 8px; background: #f0f0f0;">
-            <input type="text" id="new-rev" placeholder="Tu opinión..." style="flex:1; border-radius: 8px; border:1px solid #ccc; padding: 8px;">
-            <button onclick="sendReview()" style="background: var(--primario); color:white; border:none; border-radius: 8px; padding: 0 15px;">↑</button>
-        </div>
-    </div>
-
     <div id="admin-sidebar" class="admin-sidebar">
-        <h4>⚙️ Configuración</h4>
+        <h4>⚙️ Configuración Jefe</h4>
         <label>WhatsApp de Envíos:</label>
-        <input type="text" id="cfg-whatsapp" placeholder="Ej: 57322...">
-        
+        <input type="text" id="cfg-whatsapp">
         <hr>
-        <label>Nueva Seguridad Jefe:</label>
+        <label>Seguridad:</label>
         <input type="email" id="new-boss-email" placeholder="Nuevo Correo Jefe">
         <input type="password" id="new-boss-pass" placeholder="Nueva Contraseña Jefe">
-        <p style="font-size: 0.75em; color: #666;">Confirma con tu contraseña actual:</p>
-        <input type="password" id="confirm-old-pass" placeholder="Contraseña Actual">
-        
+        <p style="font-size: 0.7em;">Confirmar con clave actual:</p>
+        <input type="password" id="confirm-old-pass" placeholder="Clave Actual">
         <button class="btn btn-acc" style="width:100%; margin-top:10px;" onclick="updateBossSettings()">Actualizar Datos</button>
-        <button class="btn" style="width:100%; margin-top:5px; background:#eee;" onclick="toggleSidebar()">Cerrar Menú</button>
+        <button class="btn" style="width:100%; margin-top:5px; background:#eee;" onclick="toggleSidebar()">Cerrar</button>
     </div>
 
     <div id="admin-bar">
-        <div class="menu-icon" onclick="toggleSidebar()">
-            <span></span><span></span><span></span>
-        </div>
+        <div class="menu-icon" onclick="toggleSidebar()"><span></span><span></span><span></span></div>
         <button class="btn btn-acc" onclick="addProduct()">+ Producto</button>
         <button class="btn" style="background: var(--primario); color:white;" onclick="saveCloud()">💾 GUARDAR CAMBIOS</button>
         <button class="btn" style="background: var(--peligro); color:white;" onclick="exitBoss()">Salir</button>
@@ -217,8 +166,14 @@
 
         let data = { 
             productos: [], 
-            config: { bossEmail: "admin@fruteria.com", bossPass: "12345", whatsapp: "573000000000", logo: "", nombre: "Espinas Bellas", lema: "Frescura Real" }, 
-            resenas: [] 
+            config: { 
+                bossEmail: "samuelespinosab08@gmail.com", 
+                bossPass: "sarita 12", 
+                whatsapp: "573000000000", 
+                logo: "", 
+                nombre: "Espinas Bellas", 
+                lema: "Frescura Real" 
+            }
         };
         
         let currentUser = localStorage.getItem('user') || null;
@@ -227,53 +182,50 @@
         db.ref('/').on('value', snap => {
             if(snap.val()) {
                 data = snap.val();
-                if(!data.productos) data.productos = [];
-                if(!data.resenas) data.resenas = [];
                 render();
                 if(currentUser) updateUI();
             }
         });
 
-        // REGISTRO CLIENTE
         function registerClient() {
             const u = document.getElementById('reg-user').value.trim();
             const e = document.getElementById('reg-email').value.trim();
             const p = document.getElementById('reg-pass').value.trim();
             if(!u || !e || !p) return showToast("⚠️ Llena todos los campos");
 
-            db.ref('users/' + u).once('value', snap => {
-                if(snap.exists()) return showToast("❌ El usuario ya existe");
-                db.ref('users/' + u).set({ email: e, pass: p, name: u }).then(() => {
+            const safePath = e.replace(/\./g, '_');
+
+            db.ref('users/' + safePath).once('value', snap => {
+                if(snap.exists()) return showToast("❌ El correo ya está registrado");
+                db.ref('users/' + safePath).set({ email: e, pass: p, name: u }).then(() => {
                     showToast("✅ ¡Cuenta creada!"); closeModal('modal-register');
                 });
             });
         }
 
-        // LOGIN UNIFICADO (JEFE Y CLIENTES)
         function loginAll() {
             const id = document.getElementById('login-id').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
+            const safePath = id.replace(/\./g, '_');
 
-            // Verificar si es Jefe
+            // LOGIN MODO JEFE
             if(id === data.config.bossEmail && pass === data.config.bossPass) {
-                isBoss = true; currentUser = "Jefe";
-                localStorage.setItem('user', 'Jefe');
-                localStorage.setItem('isBoss', 'true');
-                showToast("👑 Modo Jefe Activado");
+                isBoss = true; currentUser = "Samuel (Jefe)";
+                localStorage.setItem('user', 'Samuel (Jefe)'); localStorage.setItem('isBoss', 'true');
+                showToast("👑 Bienvenido Jefe Samuel");
                 updateUI(); closeModal('modal-login'); render();
                 return;
             }
 
-            // Verificar si es Cliente
-            db.ref('users/' + id).once('value', snap => {
+            // LOGIN CLIENTE
+            db.ref('users/' + safePath).once('value', snap => {
                 const ud = snap.val();
                 if(ud && ud.pass === pass) {
                     currentUser = ud.name;
-                    localStorage.setItem('user', ud.name);
-                    localStorage.setItem('isBoss', 'false');
+                    localStorage.setItem('user', ud.name); localStorage.setItem('isBoss', 'false');
                     showToast("👋 Bienvenido " + ud.name);
                     updateUI(); closeModal('modal-login');
-                } else { showToast("❌ Credenciales incorrectas"); }
+                } else { showToast("❌ Datos incorrectos"); }
             });
         }
 
@@ -284,9 +236,6 @@
             if(isBoss) document.getElementById('admin-bar').style.display = 'flex';
         }
 
-        function logout() { localStorage.clear(); location.reload(); }
-
-        // MANTENIMIENTO DEL CATÁLOGO
         function render() {
             document.getElementById('biz-name').innerText = data.config.nombre;
             document.getElementById('biz-slogan').innerText = data.config.lema;
@@ -295,7 +244,7 @@
 
             const cat = document.getElementById('catalog');
             cat.innerHTML = '';
-            data.productos.forEach((p, i) => {
+            (data.productos || []).forEach((p, i) => {
                 cat.innerHTML += `
                     <div class="card">
                         <img src="${p.imagen}">
@@ -303,36 +252,26 @@
                             <h3 contenteditable="${isBoss}" oninput="data.productos[${i}].nombre=this.innerText">${p.nombre}</h3>
                             <p contenteditable="${isBoss}" oninput="data.productos[${i}].precio=this.innerText">${p.precio}</p>
                             ${isBoss ? 
-                                `<button onclick="delP(${i})" style="color:red; background:none; border:none; cursor:pointer; font-weight:bold;">[ ELIMINAR ]</button>` : 
+                                `<button onclick="delP(${i})" style="color:red; background:none; border:none; cursor:pointer;">[ ELIMINAR ]</button>` : 
                                 `<a href="https://wa.me/${data.config.whatsapp}?text=Pedido: ${p.nombre}" target="_blank" class="btn btn-pedir">PEDIR POR WHATSAPP</a>`
                             }
                         </div>
                     </div>`;
             });
-
-            const rl = document.getElementById('review-list');
-            rl.innerHTML = data.resenas.map((r, i) => `
-                <div class="rev-item">
-                    ${isBoss ? `<span onclick="delRev(${i})" style="color:red; cursor:pointer; float:right;">✕</span>` : ''}
-                    <strong>${r.user}:</strong> ${r.text}
-                </div>
-            `).join('');
-            rl.scrollTop = rl.scrollHeight;
         }
 
         function addProduct() {
+            if(!data.productos) data.productos = [];
             data.productos.push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/300" });
             render();
-            showToast("➕ Añadido localmente");
         }
 
-        function delP(i) { if(confirm("¿Borrar este producto?")) { data.productos.splice(i, 1); render(); } }
+        function delP(i) { if(confirm("¿Eliminar?")) { data.productos.splice(i, 1); render(); } }
 
         function saveCloud() {
-            db.ref('/').set(data).then(() => showToast("📁 Sincronizado en Firebase ✅"));
+            db.ref('/').set(data).then(() => showToast("📁 Guardado en la nube ✅"));
         }
 
-        // SEGURIDAD DEL JEFE (SIDEBAR)
         function updateBossSettings() {
             const oldPass = document.getElementById('confirm-old-pass').value;
             const newEmail = document.getElementById('new-boss-email').value.trim();
@@ -344,23 +283,11 @@
             if(newPass) data.config.bossPass = newPass;
             data.config.whatsapp = document.getElementById('cfg-whatsapp').value;
 
-            showToast("✅ Datos de administrador actualizados");
+            showToast("✅ Credenciales actualizadas");
             toggleSidebar();
         }
 
-        // RESEÑAS
-        function sendReview() {
-            if(!currentUser) return showToast("📢 Inicia sesión para comentar");
-            const t = document.getElementById('new-rev').value.trim();
-            if(t) {
-                data.resenas.push({ user: currentUser, text: t });
-                db.ref('resenas').set(data.resenas);
-                document.getElementById('new-rev').value = '';
-            }
-        }
-        function delRev(i) { data.resenas.splice(i, 1); db.ref('resenas').set(data.resenas); }
-
-        // UTILS
+        function logout() { localStorage.clear(); location.reload(); }
         function exitBoss() { isBoss = false; localStorage.setItem('isBoss', 'false'); document.getElementById('admin-bar').style.display = 'none'; render(); }
         function toggleSidebar() { const s = document.getElementById('admin-sidebar'); s.style.display = (s.style.display === 'flex') ? 'none' : 'flex'; }
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
