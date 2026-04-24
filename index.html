@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutería Las Espinas Bellas</title>
+    <title>Frutería Las Espinas Bellas - Premium</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -14,14 +14,9 @@
             --fondo: #f4f7f6;
         }
 
-        body {
-            font-family: 'Outfit', sans-serif;
-            background-color: var(--fondo);
-            margin: 0;
-            color: #333;
-        }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--fondo); margin: 0; padding-bottom: 80px; }
 
-        /* BARRA DE NAVEGACIÓN */
+        /* NAVEGACIÓN */
         nav {
             background: var(--primario);
             padding: 10px 25px;
@@ -34,22 +29,7 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .search-bar {
-            flex-grow: 0.4;
-            background: white;
-            border-radius: 20px;
-            padding: 5px 15px;
-            display: flex;
-        }
-
-        .search-bar input {
-            border: none;
-            width: 100%;
-            outline: none;
-            padding: 5px;
-        }
-
-        /* PERFIL DE USUARIO EN NAV */
+        /* PERFIL DE USUARIO ESTILO RED SOCIAL */
         .user-nav-profile {
             display: flex;
             align-items: center;
@@ -57,7 +37,11 @@
             color: white;
             cursor: pointer;
             position: relative;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: 0.3s;
         }
+        .user-nav-profile:hover { background: rgba(255,255,255,0.1); }
 
         .user-nav-profile img {
             width: 35px;
@@ -70,7 +54,7 @@
         .dropdown-content {
             display: none;
             position: absolute;
-            top: 45px;
+            top: 50px;
             right: 0;
             background: white;
             min-width: 160px;
@@ -78,160 +62,120 @@
             border-radius: 8px;
             overflow: hidden;
         }
-
         .dropdown-content button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            background: none;
-            text-align: left;
-            cursor: pointer;
-            font-family: 'Outfit';
+            width: 100%; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-family: 'Outfit';
         }
-
         .dropdown-content button:hover { background: #f1f1f1; }
 
-        /* HEADER */
+        /* MODALES */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        .modal-card {
+            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center;
+        }
+        .modal-card input {
+            width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;
+        }
+
+        /* HEADER Y LOGO */
         header {
             background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2000');
-            background-size: cover;
-            background-position: center;
-            color: white;
-            text-align: center;
-            padding: 60px 20px;
+            background-size: cover; background-position: center; text-align: center; padding: 60px 20px; color: white;
         }
-
         #web-logo {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            border: 4px solid var(--secundario);
-            margin-bottom: 10px;
-            cursor: pointer;
+            width: 130px; height: 130px; border-radius: 50%; border: 5px solid var(--secundario);
+            margin-bottom: 15px; cursor: pointer; transition: 0.3s; object-fit: cover;
         }
+        #web-logo:hover { transform: scale(1.05); }
 
-        /* CONTENEDOR PRINCIPAL */
-        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-
+        /* CATÁLOGO */
         .catalog { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
-            gap: 25px; 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+            gap: 25px; padding: 40px 20px; max-width: 1200px; margin: auto;
         }
-
-        .card {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            text-align: center;
-            border: 1px solid #eee;
-        }
-
+        .card { background: white; border-radius: 15px; overflow: hidden; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
         .card img { width: 100%; height: 200px; object-fit: cover; }
-        .card-info { padding: 15px; }
 
-        /* CUADRO DE RESEÑAS FLOTANTE */
+        /* CUADRO DE RESEÑAS (ESQUINA INFERIOR DERECHA) */
         #review-box {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 300px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            border: 2px solid var(--primario);
-            z-index: 900;
+            position: fixed; bottom: 85px; right: 20px; width: 300px;
+            background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 2px solid var(--primario); z-index: 900; overflow: hidden;
+        }
+        .review-header { background: var(--primario); color: white; padding: 10px; font-weight: bold; text-align: center; }
+        #review-list { max-height: 200px; overflow-y: auto; padding: 10px; font-size: 0.9em; background: #fff; }
+        .review-item { background: #f8f9fa; padding: 8px; border-radius: 8px; margin-bottom: 8px; position: relative; border-left: 3px solid var(--secundario); }
+
+        /* NOTIFICACIÓN TOAST */
+        #toast {
+            position: fixed; top: 20px; right: 20px; padding: 15px 25px; background: var(--primario);
+            color: white; border-radius: 10px; display: none; z-index: 3000; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
 
-        .review-header { background: var(--primario); color: white; padding: 10px; font-weight: bold; text-align: center; border-radius: 10px 10px 0 0; }
-        #review-list { max-height: 200px; overflow-y: auto; padding: 10px; font-size: 0.9em; }
-        .review-item { background: #f8f9fa; padding: 8px; border-radius: 8px; margin-bottom: 5px; position: relative; }
-
-        /* MODALES MODERNOS */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-        }
-
-        .modal-card {
-            background: white;
-            padding: 30px;
-            border-radius: 20px;
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
-        }
-
-        .modal-card input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-sizing: border-box;
-        }
-
-        .btn-action {
-            background: var(--primario);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-weight: bold;
-        }
-
-        /* MODO DUEÑO BARRA */
+        /* PANEL ADMIN */
         #admin-bar {
-            position: fixed;
-            bottom: 0; width: 100%;
-            background: #222; color: white;
-            padding: 15px; display: none;
-            justify-content: center; gap: 15px;
-            z-index: 1500;
+            position: fixed; bottom: 0; width: 100%; background: #1a1a1a; color: white;
+            padding: 15px; display: none; justify-content: center; align-items: center; gap: 15px; z-index: 1500;
         }
+
+        .btn { border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-acc { background: var(--secundario); color: #333; }
+        .btn-reg { background: transparent; border: 2px solid var(--secundario); color: white; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
+    <div id="toast">Operación Exitosa ✅</div>
+
     <nav>
-        <div style="color: white; font-weight: bold; font-size: 1.2rem;">Espinas Bellas</div>
-        <div class="search-bar">
-            <input type="text" placeholder="Buscar fruta..." onkeyup="filter(this.value)">
+        <div style="color: white; font-weight: 700; font-size: 1.3rem;">Espinas Bellas</div>
+        <div id="auth-buttons">
+            <button class="btn btn-reg" onclick="openModal('modal-terms')">Registrarse</button>
+            <button class="btn btn-acc" onclick="openModal('modal-login')">Acceder</button>
         </div>
-        
-        <div id="auth-ui">
-            <button onclick="openModal('modal-login')" style="background: var(--secundario); border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; font-weight: bold;">Acceder / Registrarse</button>
+        <div id="user-info" class="hidden">
+            <div class="user-nav-profile" onclick="toggleDrop()">
+                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" id="user-avatar">
+                <span id="nav-username">Usuario</span>
+                <div class="dropdown-content" id="user-drop">
+                    <button onclick="logout()" style="color: var(--peligro);">Cerrar Sesión</button>
+                </div>
+            </div>
         </div>
     </nav>
 
-    <div id="modal-login" class="modal-overlay">
+    <div id="modal-terms" class="modal-overlay">
         <div class="modal-card">
-            <h2>Crear Cuenta</h2>
-            <p style="font-size: 0.8em; color: #666;">Al unirte, aceptas el envío de promociones e información de nuestra frutería a tu correo.</p>
-            <input type="text" id="reg-user" placeholder="Nombre de Usuario">
-            <input type="email" id="reg-email" placeholder="Correo Electrónico">
-            <input type="password" id="reg-pass" placeholder="Contraseña">
-            <button class="btn-action" onclick="register()">Comenzar Experiencia</button>
-            <button onclick="closeModal('modal-login')" style="background:none; border:none; color:red; margin-top:10px; cursor:pointer;">Cancelar</button>
+            <h2>📜 Términos y Condiciones</h2>
+            <p style="font-size: 0.9em; text-align: left; background: #eee; padding: 10px; border-radius: 10px;">
+                Al registrarte, aceptas recibir promociones de Frutería Las Espinas Bellas. Tus datos serán usados únicamente para mejorar tu experiencia.
+            </p>
+            <button class="btn btn-acc" style="width: 100%;" onclick="closeModal('modal-terms'); openModal('modal-register')">Aceptar y Continuar</button>
         </div>
     </div>
 
-    <div id="modal-boss" class="modal-overlay">
-        <div class="modal-card" style="border-top: 5px solid var(--secundario);">
-            <h2>🔐 Acceso Administrativo</h2>
-            <p>Ingresa la clave maestra para gestionar la tienda.</p>
-            <input type="password" id="boss-key-input" placeholder="Clave de Jefe">
-            <button class="btn-action" style="background: #333;" onclick="verifyBoss()">Entrar como Jefe</button>
-            <button onclick="closeModal('modal-boss')" style="background:none; border:none; color:#666; margin-top:10px; cursor:pointer;">Volver</button>
+    <div id="modal-register" class="modal-overlay">
+        <div class="modal-card">
+            <h2>Crear Cuenta</h2>
+            <input type="text" id="reg-user" placeholder="Nombre de Usuario">
+            <input type="email" id="reg-email" placeholder="Correo electrónico">
+            <input type="password" id="reg-pass" placeholder="Contraseña">
+            <button class="btn btn-acc" style="width: 100%;" onclick="register()">Registrarme</button>
+            <button onclick="closeModal('modal-register')" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px;">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="modal-login" class="modal-overlay">
+        <div class="modal-card">
+            <h2>Iniciar Sesión</h2>
+            <input type="text" id="login-user" placeholder="Usuario">
+            <input type="password" id="login-pass" placeholder="Contraseña">
+            <button class="btn btn-acc" style="width: 100%;" onclick="login()">Entrar</button>
+            <button onclick="closeModal('modal-login')" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px;">Cerrar</button>
         </div>
     </div>
 
@@ -241,24 +185,22 @@
         <p id="biz-slogan">Cargando...</p>
     </header>
 
-    <div class="container">
-        <div class="catalog" id="catalog"></div>
-    </div>
+    <div class="catalog" id="catalog"></div>
 
     <div id="review-box">
-        <div class="review-header">Opiniones</div>
+        <div class="review-header">Reseñas de Clientes</div>
         <div id="review-list"></div>
-        <div style="padding: 10px; background: #eee;">
-            <input type="text" id="new-rev" placeholder="Tu reseña..." style="width: 75%; padding: 5px; border-radius: 5px; border: 1px solid #ccc;">
-            <button onclick="sendReview()" style="background: var(--primario); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">></button>
+        <div style="padding: 10px; background: #eee; display: flex; gap: 5px;">
+            <input type="text" id="new-rev" placeholder="Tu opinión..." style="flex:1; padding: 5px; border-radius: 5px; border:1px solid #ccc;">
+            <button onclick="sendReview()" style="background: var(--primario); color: white; border:none; padding: 5px 10px; border-radius: 5px; cursor:pointer;">↑</button>
         </div>
     </div>
 
     <div id="admin-bar">
         <input type="text" id="edit-wa" placeholder="WhatsApp (57...)">
-        <button onclick="addProduct()" style="background: var(--secundario); border: none; padding: 8px; border-radius: 5px; cursor: pointer;">+ Producto</button>
-        <button onclick="saveCloud()" style="background: var(--primario); color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer;">GUARDAR CAMBIOS</button>
-        <button onclick="exitBoss()" style="background: var(--peligro); color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer;">Salir</button>
+        <button class="btn btn-acc" onclick="addProduct()">+ Añadir Producto</button>
+        <button class="btn" style="background: var(--primario); color:white;" onclick="saveCloud()">💾 GUARDAR CAMBIOS</button>
+        <button class="btn" style="background:#444; color:white;" onclick="exitBoss()">Salir del Modo Jefe</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
@@ -271,25 +213,91 @@
             databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com/",
             projectId: "fruteria-las-espinas",
             storageBucket: "fruteria-las-espinas.firebasestorage.app",
-            messagingSenderId: "995826892241",
             appId: "1:995826892241:web:19fc6ba9096ecac7d7f4f0"
         };
-
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        let data = { productos: [], config: { nombre: "Frutería Espinas Bellas", lema: "Frescura Real", clave: "1234", whatsapp: "573000000000", logo: "" }, resenas: [] };
         let currentUser = null;
         let isBoss = false;
-        let data = { productos: [], config: { nombre: "Frutería Espinas Bellas", lema: "Frescura Real", clave: "1234", whatsapp: "573000000000", logo: "" }, resenas: [] };
 
-        // Realtime Data
         db.ref('/').on('value', snap => {
             if(snap.val()) {
                 data = snap.val();
+                if(!data.productos) data.productos = [];
                 if(!data.resenas) data.resenas = [];
                 render();
             }
         });
+
+        // REGISTRO Y LOGIN
+        function register() {
+            const user = document.getElementById('reg-user').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const pass = document.getElementById('reg-pass').value.trim();
+            if(user && email && pass) {
+                db.ref('users/' + user).set({ email, pass, name: user }).then(() => {
+                    showToast("¡Cuenta creada! Ya puedes acceder");
+                    closeModal('modal-register');
+                });
+            }
+        }
+
+        function login() {
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+
+            if(user === "Jefe" && pass === data.config.clave) {
+                isBoss = true; currentUser = "Jefe";
+                document.getElementById('admin-bar').style.display = 'flex';
+                updateUI(); closeModal('modal-login');
+                showToast("Bienvenido, Jefe 👑");
+                return;
+            }
+
+            db.ref('users/' + user).once('value', snap => {
+                const ud = snap.val();
+                if(ud && ud.pass === pass) {
+                    currentUser = user;
+                    updateUI(); closeModal('modal-login');
+                    showToast("Hola, " + user);
+                } else { alert("Datos incorrectos"); }
+            });
+        }
+
+        function updateUI() {
+            document.getElementById('auth-buttons').classList.add('hidden');
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('nav-username').innerText = currentUser;
+        }
+
+        function logout() { location.reload(); }
+
+        // RESEÑAS
+        function sendReview() {
+            if(!currentUser) return alert("Inicia sesión para comentar");
+            const txt = document.getElementById('new-rev').value;
+            if(txt) {
+                data.resenas.push({ user: currentUser, text: txt });
+                db.ref('resenas').set(data.resenas);
+                document.getElementById('new-rev').value = '';
+            }
+        }
+
+        function delRev(i) { if(confirm("¿Borrar reseña?")) { data.resenas.splice(i, 1); db.ref('resenas').set(data.resenas); } }
+
+        // FUNCIONES DE JEFE
+        function addProduct() {
+            data.productos.push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/300" });
+            render();
+            showToast("Producto añadido");
+        }
+
+        function saveCloud() {
+            data.config.whatsapp = document.getElementById('edit-wa').value;
+            db.ref('/').update(data).then(() => showToast("Tienda Actualizada ✅"));
+        }
 
         function render() {
             document.getElementById('biz-name').innerText = data.config.nombre;
@@ -297,111 +305,40 @@
             document.getElementById('edit-wa').value = data.config.whatsapp;
             if(data.config.logo) document.getElementById('web-logo').src = data.config.logo;
 
-            // Catalogo
+            // Catálogo
             const cat = document.getElementById('catalog');
             cat.innerHTML = '';
             data.productos.forEach((p, i) => {
                 cat.innerHTML += `
                     <div class="card">
                         <img src="${p.imagen}">
-                        <div class="card-info">
+                        <div style="padding:15px;">
                             <h3 contenteditable="${isBoss}" oninput="data.productos[${i}].nombre=this.innerText">${p.nombre}</h3>
                             <p contenteditable="${isBoss}" oninput="data.productos[${i}].precio=this.innerText">${p.precio}</p>
-                            ${isBoss ? `<button onclick="removeP(${i})" style="color:red; background:none; border:none; cursor:pointer;">Eliminar</button>` : 
-                            `<a href="https://wa.me/${data.config.whatsapp}?text=Pedido: ${p.nombre}" target="_blank" style="text-decoration:none; color:green; font-weight:bold;">Pedir</a>`}
+                            ${isBoss ? `<button onclick="delP(${i})" style="color:red; cursor:pointer; background:none; border:none;">Eliminar</button>` : `<button class="btn btn-acc">Pedir</button>`}
                         </div>
                     </div>`;
             });
 
             // Reseñas
-            const rList = document.getElementById('review-list');
-            rList.innerHTML = data.resenas.map((r, i) => `
+            const rl = document.getElementById('review-list');
+            rl.innerHTML = data.resenas.map((r, i) => `
                 <div class="review-item">
-                    ${isBoss ? `<button onclick="delRev(${i})" style="position:absolute; right:5px; top:5px; background:none; border:none; color:red; cursor:pointer;">✕</button>` : ''}
+                    ${isBoss ? `<button onclick="delRev(${i})" style="position:absolute; right:5px; top:5px; border:none; color:red; background:none; cursor:pointer;">✕</button>` : ''}
                     <strong>${r.user}:</strong> ${r.text}
                 </div>
             `).join('');
-        }
-
-        // LÓGICA DE USUARIO
-        function register() {
-            const user = document.getElementById('reg-user').value;
-            const email = document.getElementById('reg-email').value;
-            const pass = document.getElementById('reg-pass').value;
-
-            if(user && email && pass) {
-                currentUser = user;
-                updateAuthUI();
-                closeModal('modal-login');
-            } else { alert("Completa todos los campos"); }
-        }
-
-        function updateAuthUI() {
-            const ui = document.getElementById('auth-ui');
-            ui.innerHTML = `
-                <div class="user-nav-profile" onclick="toggleDrop()">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
-                    <span>${currentUser}</span>
-                    <div class="dropdown-content" id="user-drop">
-                        <button onclick="openModal('modal-boss')">Modo Jefe</button>
-                        <button onclick="logout()" style="color:red;">Cerrar Sesión</button>
-                    </div>
-                </div>`;
-        }
-
-        function logout() {
-            currentUser = null;
-            location.reload();
-        }
-
-        // LÓGICA DE JEFE
-        function verifyBoss() {
-            const key = document.getElementById('boss-key-input').value;
-            if(key === data.config.clave) {
-                isBoss = true;
-                document.getElementById('admin-bar').style.display = 'flex';
-                closeModal('modal-boss');
-                render();
-            } else { alert("Clave Incorrecta"); }
-        }
-
-        function exitBoss() {
-            isBoss = false;
-            document.getElementById('admin-bar').style.display = 'none';
-            render();
-        }
-
-        // ACCIONES
-        function sendReview() {
-            if(!currentUser) return alert("Inicia sesión para comentar");
-            const txt = document.getElementById('new-rev').value;
-            if(txt) {
-                data.resenas.push({ user: currentUser, text: txt });
-                saveCloud(true);
-                document.getElementById('new-rev').value = '';
-            }
-        }
-
-        function saveCloud(silent = false) {
-            data.config.whatsapp = document.getElementById('edit-wa').value;
-            db.ref('/').set(data).then(() => { if(!silent) alert("Tienda Actualizada ✅"); });
+            rl.scrollTop = rl.scrollHeight;
         }
 
         // UTILS
+        function delP(i) { data.productos.splice(i, 1); render(); }
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function toggleDrop() {
-            const d = document.getElementById('user-drop');
-            d.style.display = d.style.display === 'block' ? 'none' : 'block';
-        }
-        function addP() { data.productos.push({nombre: "Nueva Fruta", precio: "$0", imagen: "https://via.placeholder.com/300"}); render(); }
-        function removeP(i) { data.productos.splice(i, 1); render(); }
-        function delRev(i) { data.resenas.splice(i, 1); render(); }
-        function changeLogo() { if(isBoss) { const l = prompt("Link de imagen:"); if(l) data.config.logo = l; render(); } }
-        function filter(q) {
-            const cards = document.querySelectorAll('.card');
-            cards.forEach(c => c.style.display = c.innerText.toLowerCase().includes(q.toLowerCase()) ? 'block' : 'none');
-        }
+        function toggleDrop() { const d = document.getElementById('user-drop'); d.style.display = d.style.display === 'block' ? 'none' : 'block'; }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
+        function exitBoss() { isBoss = false; document.getElementById('admin-bar').style.display = 'none'; render(); }
+        function changeLogo() { if(isBoss) { const l = prompt("Enlace de imagen:"); if(l) data.config.logo = l; render(); } }
     </script>
 </body>
 </html>
