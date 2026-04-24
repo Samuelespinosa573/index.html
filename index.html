@@ -3,146 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutería Las Espinas Bellas - Premium</title>
+    <title>Frutería Las Espinas Bellas - Master Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primario: #2d6a4f;
             --secundario: #ffca3a;
             --peligro: #ff4757;
-            --blanco: #ffffff;
             --fondo: #f4f7f6;
+            --blanco: #ffffff;
         }
 
-        body { font-family: 'Outfit', sans-serif; background-color: var(--fondo); margin: 0; padding-bottom: 80px; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--fondo); margin: 0; padding-bottom: 100px; }
 
         /* NAVEGACIÓN */
         nav {
             background: var(--primario);
-            padding: 10px 25px;
+            padding: 12px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            position: sticky; top: 0; z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-        /* PERFIL DE USUARIO ESTILO RED SOCIAL */
         .user-nav-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: white;
-            cursor: pointer;
-            position: relative;
-            padding: 5px 10px;
-            border-radius: 20px;
-            transition: 0.3s;
+            display: flex; align-items: center; gap: 12px; color: white; cursor: pointer; position: relative;
         }
-        .user-nav-profile:hover { background: rgba(255,255,255,0.1); }
-
-        .user-nav-profile img {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            border: 2px solid var(--secundario);
-            object-fit: cover;
+        .user-nav-profile img { 
+            width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--secundario); 
+            object-fit: cover; background: white;
         }
 
         .dropdown-content {
-            display: none;
-            position: absolute;
-            top: 50px;
-            right: 0;
-            background: white;
-            min-width: 160px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-            border-radius: 8px;
-            overflow: hidden;
+            display: none; position: absolute; top: 55px; right: 0; background: white;
+            min-width: 180px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 10px; overflow: hidden;
         }
-        .dropdown-content button {
-            width: 100%; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-family: 'Outfit';
-        }
-        .dropdown-content button:hover { background: #f1f1f1; }
+        .dropdown-content button { width: 100%; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-family: 'Outfit'; }
+        .dropdown-content button:hover { background: #f5f5f5; }
 
-        /* MODALES */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000;
-            backdrop-filter: blur(5px);
-        }
-        .modal-card {
-            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center;
-        }
-        .modal-card input {
-            width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;
-        }
-
-        /* HEADER Y LOGO */
+        /* HEADER */
         header {
-            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2000');
-            background-size: cover; background-position: center; text-align: center; padding: 60px 20px; color: white;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2000');
+            background-size: cover; background-position: center; text-align: center; padding: 70px 20px; color: white;
         }
-        #web-logo {
-            width: 130px; height: 130px; border-radius: 50%; border: 5px solid var(--secundario);
-            margin-bottom: 15px; cursor: pointer; transition: 0.3s; object-fit: cover;
+        #web-logo { 
+            width: 140px; height: 140px; border-radius: 50%; border: 5px solid var(--secundario); 
+            cursor: pointer; object-fit: cover; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
-        #web-logo:hover { transform: scale(1.05); }
 
         /* CATÁLOGO */
         .catalog { 
             display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
-            gap: 25px; padding: 40px 20px; max-width: 1200px; margin: auto;
+            gap: 30px; padding: 40px 20px; max-width: 1200px; margin: auto;
         }
-        .card { background: white; border-radius: 15px; overflow: hidden; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .card { background: white; border-radius: 18px; overflow: hidden; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.08); transition: 0.3s; }
+        .card:hover { transform: translateY(-5px); }
         .card img { width: 100%; height: 200px; object-fit: cover; }
+        .card-body { padding: 20px; }
 
-        /* CUADRO DE RESEÑAS (ESQUINA INFERIOR DERECHA) */
+        /* RESEÑAS FLOTANTES */
         #review-box {
-            position: fixed; bottom: 85px; right: 20px; width: 300px;
-            background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: fixed; bottom: 95px; right: 25px; width: 300px;
+            background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.25);
             border: 2px solid var(--primario); z-index: 900; overflow: hidden;
         }
-        .review-header { background: var(--primario); color: white; padding: 10px; font-weight: bold; text-align: center; }
-        #review-list { max-height: 200px; overflow-y: auto; padding: 10px; font-size: 0.9em; background: #fff; }
-        .review-item { background: #f8f9fa; padding: 8px; border-radius: 8px; margin-bottom: 8px; position: relative; border-left: 3px solid var(--secundario); }
+        .review-header { background: var(--primario); color: white; padding: 12px; text-align: center; font-weight: bold; }
+        #review-list { max-height: 180px; overflow-y: auto; padding: 15px; font-size: 0.9em; }
+        .rev-item { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 8px; border-left: 4px solid var(--secundario); position: relative; }
 
-        /* NOTIFICACIÓN TOAST */
-        #toast {
-            position: fixed; top: 20px; right: 20px; padding: 15px 25px; background: var(--primario);
-            color: white; border-radius: 10px; display: none; z-index: 3000; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        /* MODALES */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px);
         }
+        .modal-card { background: white; padding: 35px; border-radius: 25px; width: 90%; max-width: 400px; text-align: center; }
+        .modal-card input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
 
-        /* PANEL ADMIN */
+        /* ADMIN BAR */
         #admin-bar {
             position: fixed; bottom: 0; width: 100%; background: #1a1a1a; color: white;
-            padding: 15px; display: none; justify-content: center; align-items: center; gap: 15px; z-index: 1500;
+            padding: 18px; display: none; justify-content: center; align-items: center; gap: 20px; z-index: 1500;
         }
 
-        .btn { border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        /* BOTONES */
+        .btn { border: none; padding: 12px 24px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-pedir { background: #25d366; color: white; text-decoration: none; display: block; margin-top: 10px; }
         .btn-acc { background: var(--secundario); color: #333; }
         .btn-reg { background: transparent; border: 2px solid var(--secundario); color: white; }
+        .btn-danger { color: var(--peligro); background: none; font-size: 0.8em; margin-top: 10px; }
+        
+        #toast { position: fixed; top: 25px; right: 25px; background: var(--primario); color: white; padding: 15px 25px; border-radius: 12px; display: none; z-index: 3000; box-shadow: 0 5px 20px rgba(0,0,0,0.2); }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="toast">Operación Exitosa ✅</div>
+    <div id="toast">Mensaje del sistema</div>
 
     <nav>
-        <div style="color: white; font-weight: 700; font-size: 1.3rem;">Espinas Bellas</div>
+        <div style="color: white; font-weight: 700; font-size: 1.4rem;">Espinas Bellas</div>
         <div id="auth-buttons">
             <button class="btn btn-reg" onclick="openModal('modal-terms')">Registrarse</button>
             <button class="btn btn-acc" onclick="openModal('modal-login')">Acceder</button>
         </div>
         <div id="user-info" class="hidden">
             <div class="user-nav-profile" onclick="toggleDrop()">
-                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" id="user-avatar">
+                <img id="user-avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
                 <span id="nav-username">Usuario</span>
                 <div class="dropdown-content" id="user-drop">
-                    <button onclick="logout()" style="color: var(--peligro);">Cerrar Sesión</button>
+                    <button onclick="logout()" style="color: var(--peligro); font-weight: bold;">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
@@ -151,9 +121,9 @@
     <div id="modal-terms" class="modal-overlay">
         <div class="modal-card">
             <h2>📜 Términos y Condiciones</h2>
-            <p style="font-size: 0.9em; text-align: left; background: #eee; padding: 10px; border-radius: 10px;">
-                Al registrarte, aceptas recibir promociones de Frutería Las Espinas Bellas. Tus datos serán usados únicamente para mejorar tu experiencia.
-            </p>
+            <div style="text-align: left; font-size: 0.85em; background: #f4f4f4; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                Aceptas que guardemos tus datos para gestionar pedidos y enviarte promociones de la frutería. No compartimos tu info con terceros.
+            </div>
             <button class="btn btn-acc" style="width: 100%;" onclick="closeModal('modal-terms'); openModal('modal-register')">Aceptar y Continuar</button>
         </div>
     </div>
@@ -162,43 +132,43 @@
         <div class="modal-card">
             <h2>Crear Cuenta</h2>
             <input type="text" id="reg-user" placeholder="Nombre de Usuario">
-            <input type="email" id="reg-email" placeholder="Correo electrónico">
+            <input type="email" id="reg-email" placeholder="Correo Electrónico">
             <input type="password" id="reg-pass" placeholder="Contraseña">
             <button class="btn btn-acc" style="width: 100%;" onclick="register()">Registrarme</button>
-            <button onclick="closeModal('modal-register')" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px;">Cancelar</button>
+            <button onclick="closeModal('modal-register')" class="btn-danger">Cancelar</button>
         </div>
     </div>
 
     <div id="modal-login" class="modal-overlay">
         <div class="modal-card">
-            <h2>Iniciar Sesión</h2>
+            <h2>Acceso Clientes</h2>
             <input type="text" id="login-user" placeholder="Usuario">
             <input type="password" id="login-pass" placeholder="Contraseña">
             <button class="btn btn-acc" style="width: 100%;" onclick="login()">Entrar</button>
-            <button onclick="closeModal('modal-login')" style="background:none; border:none; color:red; cursor:pointer; margin-top:10px;">Cerrar</button>
+            <button onclick="closeModal('modal-login')" class="btn-danger">Volver</button>
         </div>
     </div>
 
     <header>
-        <img id="web-logo" src="https://via.placeholder.com/150?text=LOGO" onclick="changeLogo()">
-        <h1 id="biz-name">Cargando...</h1>
-        <p id="biz-slogan">Cargando...</p>
+        <img id="web-logo" src="https://via.placeholder.com/150" onclick="changeLogo()">
+        <h1 id="biz-name">Frutería Las Espinas Bellas</h1>
+        <p id="biz-slogan">Frescura que enamora</p>
     </header>
 
     <div class="catalog" id="catalog"></div>
 
     <div id="review-box">
-        <div class="review-header">Reseñas de Clientes</div>
+        <div class="review-header">Opiniones Reales</div>
         <div id="review-list"></div>
-        <div style="padding: 10px; background: #eee; display: flex; gap: 5px;">
-            <input type="text" id="new-rev" placeholder="Tu opinión..." style="flex:1; padding: 5px; border-radius: 5px; border:1px solid #ccc;">
-            <button onclick="sendReview()" style="background: var(--primario); color: white; border:none; padding: 5px 10px; border-radius: 5px; cursor:pointer;">↑</button>
+        <div style="padding: 10px; display: flex; gap: 8px; background: #f0f0f0;">
+            <input type="text" id="new-rev" placeholder="Escribe aquí..." style="flex:1; border-radius: 8px; border:1px solid #ccc; padding: 8px;">
+            <button onclick="sendReview()" style="background: var(--primario); color:white; border:none; border-radius: 8px; cursor:pointer; padding: 0 15px;">↑</button>
         </div>
     </div>
 
     <div id="admin-bar">
-        <input type="text" id="edit-wa" placeholder="WhatsApp (57...)">
-        <button class="btn btn-acc" onclick="addProduct()">+ Añadir Producto</button>
+        <input type="text" id="edit-wa" placeholder="WhatsApp (Ej: 573...)">
+        <button class="btn btn-acc" onclick="addProduct()">+ Producto</button>
         <button class="btn" style="background: var(--primario); color:white;" onclick="saveCloud()">💾 GUARDAR CAMBIOS</button>
         <button class="btn" style="background:#444; color:white;" onclick="exitBoss()">Salir del Modo Jefe</button>
     </div>
@@ -218,51 +188,65 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let data = { productos: [], config: { nombre: "Frutería Espinas Bellas", lema: "Frescura Real", clave: "1234", whatsapp: "573000000000", logo: "" }, resenas: [] };
-        let currentUser = null;
-        let isBoss = false;
+        let data = { productos: [], config: { nombre: "Espinas Bellas", lema: "Frescura Real", clave: "1234", whatsapp: "573000000000", logo: "" }, resenas: [] };
+        let currentUser = localStorage.getItem('user') || null;
+        let isBoss = localStorage.getItem('isBoss') === 'true';
 
+        // Escucha de datos en tiempo real
         db.ref('/').on('value', snap => {
             if(snap.val()) {
                 data = snap.val();
                 if(!data.productos) data.productos = [];
                 if(!data.resenas) data.resenas = [];
                 render();
+                if(currentUser) updateUI();
             }
         });
 
-        // REGISTRO Y LOGIN
+        // REGISTRO CON VERIFICACIÓN
         function register() {
-            const user = document.getElementById('reg-user').value.trim();
-            const email = document.getElementById('reg-email').value.trim();
-            const pass = document.getElementById('reg-pass').value.trim();
-            if(user && email && pass) {
-                db.ref('users/' + user).set({ email, pass, name: user }).then(() => {
-                    showToast("¡Cuenta creada! Ya puedes acceder");
-                    closeModal('modal-register');
-                });
-            }
+            const u = document.getElementById('reg-user').value.trim();
+            const e = document.getElementById('reg-email').value.trim();
+            const p = document.getElementById('reg-pass').value.trim();
+            
+            if(!u || !e || !p) return showToast("⚠️ Llena todos los campos");
+            
+            db.ref('users/' + u).once('value', snap => {
+                if(snap.exists()) {
+                    showToast("❌ El nombre de usuario ya existe");
+                } else {
+                    db.ref('users/' + u).set({ email: e, pass: p, name: u }).then(() => {
+                        showToast("✅ ¡Registrado! Inicia sesión ahora");
+                        closeModal('modal-register');
+                    });
+                }
+            });
         }
 
+        // LOGIN MEJORADO
         function login() {
-            const user = document.getElementById('login-user').value.trim();
-            const pass = document.getElementById('login-pass').value.trim();
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
 
-            if(user === "Jefe" && pass === data.config.clave) {
+            if(u === "Jefe" && p === data.config.clave) {
                 isBoss = true; currentUser = "Jefe";
+                localStorage.setItem('user', 'Jefe');
+                localStorage.setItem('isBoss', 'true');
                 document.getElementById('admin-bar').style.display = 'flex';
                 updateUI(); closeModal('modal-login');
-                showToast("Bienvenido, Jefe 👑");
+                showToast("👑 Bienvenido, Jefe");
                 return;
             }
 
-            db.ref('users/' + user).once('value', snap => {
+            db.ref('users/' + u).once('value', snap => {
                 const ud = snap.val();
-                if(ud && ud.pass === pass) {
-                    currentUser = user;
+                if(ud && ud.pass === p) {
+                    currentUser = u;
+                    localStorage.setItem('user', u);
+                    localStorage.setItem('isBoss', 'false');
                     updateUI(); closeModal('modal-login');
-                    showToast("Hola, " + user);
-                } else { alert("Datos incorrectos"); }
+                    showToast("👋 ¡Hola, " + u + "!");
+                } else { showToast("❌ Usuario o clave incorrectos"); }
             });
         }
 
@@ -270,75 +254,86 @@
             document.getElementById('auth-buttons').classList.add('hidden');
             document.getElementById('user-info').classList.remove('hidden');
             document.getElementById('nav-username').innerText = currentUser;
-        }
-
-        function logout() { location.reload(); }
-
-        // RESEÑAS
-        function sendReview() {
-            if(!currentUser) return alert("Inicia sesión para comentar");
-            const txt = document.getElementById('new-rev').value;
-            if(txt) {
-                data.resenas.push({ user: currentUser, text: txt });
-                db.ref('resenas').set(data.resenas);
-                document.getElementById('new-rev').value = '';
+            if(isBoss) {
+                document.getElementById('user-avatar').src = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"; // Puedes cambiar por ícono corona
+                document.getElementById('admin-bar').style.display = 'flex';
             }
         }
 
-        function delRev(i) { if(confirm("¿Borrar reseña?")) { data.resenas.splice(i, 1); db.ref('resenas').set(data.resenas); } }
-
-        // FUNCIONES DE JEFE
-        function addProduct() {
-            data.productos.push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/300" });
-            render();
-            showToast("Producto añadido");
+        function logout() {
+            localStorage.clear();
+            location.reload();
         }
 
-        function saveCloud() {
-            data.config.whatsapp = document.getElementById('edit-wa').value;
-            db.ref('/').update(data).then(() => showToast("Tienda Actualizada ✅"));
-        }
-
+        // RENDERIZADO CORREGIDO (PEDIR Y ELIMINAR)
         function render() {
             document.getElementById('biz-name').innerText = data.config.nombre;
             document.getElementById('biz-slogan').innerText = data.config.lema;
             document.getElementById('edit-wa').value = data.config.whatsapp;
             if(data.config.logo) document.getElementById('web-logo').src = data.config.logo;
 
-            // Catálogo
             const cat = document.getElementById('catalog');
             cat.innerHTML = '';
             data.productos.forEach((p, i) => {
                 cat.innerHTML += `
                     <div class="card">
                         <img src="${p.imagen}">
-                        <div style="padding:15px;">
+                        <div class="card-body">
                             <h3 contenteditable="${isBoss}" oninput="data.productos[${i}].nombre=this.innerText">${p.nombre}</h3>
                             <p contenteditable="${isBoss}" oninput="data.productos[${i}].precio=this.innerText">${p.precio}</p>
-                            ${isBoss ? `<button onclick="delP(${i})" style="color:red; cursor:pointer; background:none; border:none;">Eliminar</button>` : `<button class="btn btn-acc">Pedir</button>`}
+                            ${isBoss ? 
+                                `<button onclick="delP(${i})" style="color:var(--peligro); cursor:pointer; background:none; border:none; font-weight:bold;">[ ELIMINAR ]</button>` : 
+                                `<a href="https://wa.me/${data.config.whatsapp}?text=Pedido: ${p.nombre}" target="_blank" class="btn btn-pedir">PEDIR POR WHATSAPP</a>`
+                            }
                         </div>
                     </div>`;
             });
 
-            // Reseñas
             const rl = document.getElementById('review-list');
             rl.innerHTML = data.resenas.map((r, i) => `
-                <div class="review-item">
-                    ${isBoss ? `<button onclick="delRev(${i})" style="position:absolute; right:5px; top:5px; border:none; color:red; background:none; cursor:pointer;">✕</button>` : ''}
+                <div class="rev-item">
+                    ${isBoss ? `<span onclick="delRev(${i})" style="color:red; cursor:pointer; float:right;">✕</span>` : ''}
                     <strong>${r.user}:</strong> ${r.text}
                 </div>
             `).join('');
             rl.scrollTop = rl.scrollHeight;
         }
 
-        // UTILS
-        function delP(i) { data.productos.splice(i, 1); render(); }
+        // FUNCIONES DE GESTIÓN
+        function addProduct() {
+            data.productos.push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/300?text=Sube+una+foto" });
+            render();
+            showToast("➕ Producto añadido");
+        }
+
+        function delP(i) { if(confirm("¿Seguro que quieres eliminar este producto?")) { data.productos.splice(i, 1); render(); } }
+        
+        function sendReview() {
+            if(!currentUser) return showToast("📢 Debes iniciar sesión");
+            const t = document.getElementById('new-rev').value.trim();
+            if(t) {
+                data.resenas.push({ user: currentUser, text: t });
+                db.ref('resenas').set(data.resenas);
+                document.getElementById('new-rev').value = '';
+            }
+        }
+
+        function delRev(i) { data.resenas.splice(i, 1); db.ref('resenas').set(data.resenas); }
+
+        function saveCloud() {
+            data.config.whatsapp = document.getElementById('edit-wa').value;
+            db.ref('/').update(data).then(() => showToast("📁 Cambios guardados en la nube"));
+        }
+
+        function exitBoss() { isBoss = false; localStorage.setItem('isBoss', 'false'); document.getElementById('admin-bar').style.display = 'none'; render(); }
+        
+        function changeLogo() { if(isBoss) { const l = prompt("Pega el enlace de la nueva imagen de logo:"); if(l) { data.config.logo = l; render(); } } }
+
+        // UTILS MODALES
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
         function toggleDrop() { const d = document.getElementById('user-drop'); d.style.display = d.style.display === 'block' ? 'none' : 'block'; }
-        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
-        function exitBoss() { isBoss = false; document.getElementById('admin-bar').style.display = 'none'; render(); }
-        function changeLogo() { if(isBoss) { const l = prompt("Enlace de imagen:"); if(l) data.config.logo = l; render(); } }
+        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3500); }
     </script>
 </body>
 </html>
