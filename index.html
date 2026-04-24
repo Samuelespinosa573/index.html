@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Frutería Las Espinas Bellas - Panel de Control</title>
+    <title>Frutería Las Espinas Bellas - v7 Ultra Fix</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,78 +12,84 @@
             --peligro: #ff4757;
             --fondo: #f4f7f6;
             --oscuro: #1a1a1a;
+            --exito: #25d366;
         }
 
-        body { font-family: 'Outfit', sans-serif; background-color: var(--fondo); margin: 0; padding-bottom: 100px; transition: 0.3s; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--fondo); margin: 0; padding-bottom: 120px; color: var(--oscuro); }
 
-        /* NAVEGACIÓN */
+        /* NAVEGACIÓN PROFESIONAL */
         nav {
             background: var(--primario);
-            padding: 12px 25px;
+            padding: 15px 25px;
             display: flex; justify-content: space-between; align-items: center;
             position: sticky; top: 0; z-index: 1000;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
+        .logo-texto { color: white; font-weight: 700; font-size: 1.4rem; letter-spacing: -0.5px; }
+
         .user-nav-profile { display: flex; align-items: center; gap: 12px; color: white; cursor: pointer; position: relative; }
-        .user-nav-profile img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--secundario); background: white; object-fit: cover; }
+        .user-nav-profile img { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--secundario); background: white; object-fit: cover; }
 
-        .dropdown-content {
+        .dropdown-menu {
             display: none; position: absolute; top: 55px; right: 0; background: white;
-            min-width: 180px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); border-radius: 10px; overflow: hidden;
+            min-width: 160px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); border-radius: 12px; overflow: hidden;
         }
-        .dropdown-content button { width: 100%; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-family: 'Outfit'; }
-        .dropdown-content button:hover { background: #f5f5f5; }
+        .dropdown-menu button { width: 100%; padding: 12px; border: none; background: none; text-align: left; cursor: pointer; font-family: 'Outfit'; transition: 0.2s; }
+        .dropdown-menu button:hover { background: #f8f9fa; color: var(--peligro); }
 
-        /* HEADER */
+        /* HEADER DINÁMICO */
         header {
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2000');
-            background-size: cover; background-position: center; text-align: center; padding: 60px 20px; color: white;
+            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?q=80&w=2000');
+            background-size: cover; background-position: center; text-align: center; padding: 70px 20px; color: white;
         }
-        #web-logo { width: 120px; height: 120px; border-radius: 50%; border: 4px solid var(--secundario); cursor: pointer; object-fit: cover; }
+        #web-logo { width: 130px; height: 130px; border-radius: 50%; border: 5px solid var(--secundario); cursor: pointer; object-fit: cover; margin-bottom: 15px; background: white; }
 
-        /* CATÁLOGO */
-        .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px; padding: 40px 20px; max-width: 1200px; margin: auto; }
-        .card { background: white; border-radius: 18px; overflow: hidden; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.08); transition: 0.3s; }
-        .card img { width: 100%; height: 200px; object-fit: cover; }
-        .card-body { padding: 20px; }
+        /* CATÁLOGO MEJORADO */
+        .catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; padding: 40px 20px; max-width: 1200px; margin: auto; }
+        .card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); transition: 0.3s; position: relative; border: 1px solid rgba(0,0,0,0.05); }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 220px; object-fit: cover; }
+        .card-content { padding: 20px; text-align: center; }
+        .card-content h3 { margin: 0 0 10px; font-size: 1.3rem; color: var(--primario); }
+        .card-content p { font-weight: 700; color: #555; font-size: 1.1rem; margin-bottom: 15px; }
 
         /* MODALES */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(4px); }
-        .modal-card { background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
-        .modal-card input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
-
-        /* BARRA ADMIN */
-        #admin-bar { position: fixed; bottom: 0; width: 100%; background: var(--oscuro); color: white; padding: 15px; display: none; justify-content: space-around; align-items: center; z-index: 1500; }
-        .menu-icon { cursor: pointer; display: flex; flex-direction: column; gap: 5px; padding: 10px; }
-        .menu-icon span { width: 28px; height: 3px; background: white; border-radius: 2px; }
-
-        .admin-sidebar { position: fixed; bottom: 80px; left: 20px; background: white; color: #333; width: 280px; border-radius: 15px; box-shadow: 0 -5px 25px rgba(0,0,0,0.3); display: none; flex-direction: column; padding: 20px; z-index: 1600; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 2000; backdrop-filter: blur(6px); }
+        .modal-card { background: white; padding: 35px; border-radius: 25px; width: 90%; max-width: 400px; text-align: center; animation: zoomIn 0.3s ease; }
+        @keyframes zoomIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-card input { width: 100%; padding: 14px; margin: 12px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 1rem; outline: none; }
+        .modal-card input:focus { border-color: var(--primario); }
 
         /* BOTONES */
-        .btn { border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        .btn-acc { background: var(--secundario); color: #333; }
-        .btn-pedir { background: #25d366; color: white; text-decoration: none; display: block; margin-top: 10px; border-radius: 8px; padding: 10px; }
-        
-        #toast { position: fixed; top: 25px; right: 25px; background: var(--oscuro); color: white; padding: 15px 25px; border-radius: 12px; display: none; z-index: 3000; }
+        .btn { border: none; padding: 12px 25px; border-radius: 12px; cursor: pointer; font-weight: 700; font-family: 'Outfit'; transition: 0.3s; }
+        .btn-acc { background: var(--secundario); color: var(--oscuro); }
+        .btn-pedir { background: var(--exito); color: white; text-decoration: none; display: block; padding: 12px; border-radius: 10px; margin-top: 10px; }
+        .btn-pedir:hover { background: #1eb956; }
+
+        /* BARRA DE COMANDOS (JEFE) */
+        #admin-bar { position: fixed; bottom: 0; width: 100%; background: var(--oscuro); color: white; padding: 20px; display: none; justify-content: space-around; align-items: center; z-index: 1500; border-top: 3px solid var(--secundario); }
+        .admin-sidebar { position: fixed; bottom: 100px; left: 20px; background: white; color: #333; width: 300px; border-radius: 20px; box-shadow: 0 0 40px rgba(0,0,0,0.5); display: none; flex-direction: column; padding: 25px; z-index: 1600; }
+
+        #toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%); background: var(--oscuro); color: white; padding: 15px 30px; border-radius: 50px; display: none; z-index: 3000; font-weight: 600; box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <div id="toast">Notificación</div>
+    <div id="toast"></div>
 
     <nav>
-        <div style="color: white; font-weight: 700; font-size: 1.4rem;">Espinas Bellas</div>
+        <div class="logo-texto">Espinas Bellas</div>
         <div id="auth-buttons">
-            <button class="btn btn-acc" onclick="openModal('modal-login')">Acceder</button>
+            <button class="btn btn-acc" onclick="openModal('modal-login')">Entrar al Sistema</button>
         </div>
         <div id="user-info" class="hidden">
             <div class="user-nav-profile" onclick="toggleDrop()">
-                <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+                <img id="nav-img" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
                 <span id="nav-username">Usuario</span>
-                <div class="dropdown-content" id="user-drop">
-                    <button onclick="logout()" style="color: var(--peligro);">Cerrar Sesión</button>
+                <div class="dropdown-menu" id="user-drop">
+                    <button onclick="logout()">Cerrar Sesión</button>
                 </div>
             </div>
         </div>
@@ -91,48 +97,48 @@
 
     <header>
         <img id="web-logo" src="https://via.placeholder.com/150" onclick="changeLogo()">
-        <h1 id="biz-name">Frutería Las Espinas Bellas</h1>
-        <p id="biz-slogan">Frescura que enamora</p>
+        <h1 id="biz-name">Cargando...</h1>
+        <p id="biz-slogan">Frescura garantizada</p>
     </header>
 
     <div class="catalog" id="catalog"></div>
 
     <div id="modal-login" class="modal-overlay">
         <div class="modal-card">
-            <h2>Iniciar Sesión</h2>
-            <input type="text" id="login-id" placeholder="Usuario o Correo">
+            <h2 style="margin-top:0">Bienvenido</h2>
+            <p style="color: #666; font-size: 0.9rem;">Ingrese su código de acceso o correo</p>
+            <input type="text" id="login-id" placeholder="Código o Email">
             <input type="password" id="login-pass" placeholder="Contraseña">
-            <button class="btn btn-acc" style="width: 100%;" onclick="loginAll()">Entrar</button>
-            <button onclick="closeModal('modal-login')" style="color:red; background:none; border:none; margin-top:10px; cursor:pointer;">Cerrar</button>
+            <button class="btn btn-acc" style="width: 100%; margin-top:10px" onclick="loginAll()">Acceder Ahora</button>
+            <button onclick="closeModal('modal-login')" style="margin-top:20px; background:none; border:none; color:var(--peligro); cursor:pointer; font-weight:600">Volver al inicio</button>
         </div>
     </div>
 
     <div id="admin-sidebar" class="admin-sidebar">
-        <h4>⚙️ Panel del Jefe</h4>
-        <label>WhatsApp de Envíos:</label>
-        <input type="text" id="cfg-whatsapp">
-        <hr>
-        <label>Nuevo Usuario/Correo:</label>
-        <input type="text" id="new-boss-id" placeholder="espinas bellas">
-        <label>Nueva Contraseña:</label>
+        <h3 style="margin-top:0">🛠️ Configuración</h3>
+        <label>WhatsApp de Pedidos:</label>
+        <input type="text" id="cfg-whatsapp" placeholder="57322...">
+        <hr style="margin: 20px 0; border: 0.5px solid #eee;">
+        <label>Cambiar Código Jefe:</label>
+        <input type="text" id="new-boss-id" placeholder="Nuevo código de 8 dígitos">
+        <label>Cambiar Contraseña:</label>
         <input type="password" id="new-boss-pass" placeholder="Nueva clave">
-        <button class="btn btn-acc" style="width:100%; margin-top:10px;" onclick="updateBossSettings()">Guardar Seguridad</button>
-        <button class="btn" style="width:100%; margin-top:5px; background:#eee;" onclick="toggleSidebar()">Cerrar Menú</button>
+        <button class="btn btn-acc" style="width:100%; margin-top:15px;" onclick="updateBossSettings()">Aplicar Cambios</button>
+        <button class="btn" style="width:100%; margin-top:8px; background:#f0f0f0;" onclick="toggleSidebar()">Cerrar Panel</button>
     </div>
 
     <div id="admin-bar">
-        <div class="menu-icon" onclick="toggleSidebar()">
-            <span></span><span></span><span></span>
-        </div>
-        <button class="btn btn-acc" onclick="addProduct()">+ Producto</button>
-        <button class="btn" style="background: var(--primario); color:white;" onclick="saveCloud()">💾 GUARDAR CAMBIOS</button>
-        <button class="btn" style="background: var(--peligro); color:white;" onclick="exitBoss()">Salir</button>
+        <button class="btn btn-acc" onclick="toggleSidebar()">⚙️ AJUSTES</button>
+        <button class="btn" style="background: var(--exito); color:white;" onclick="addProduct()">+ PRODUCTO</button>
+        <button class="btn" style="background: #2196f3; color:white;" onclick="saveCloud()">💾 GUARDAR CAMBIOS</button>
+        <button class="btn" style="background: var(--peligro); color:white;" onclick="exitBoss()">SALIR</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
     <script>
+        // CONFIGURACIÓN DE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAOcuj_tFSsKKqKXtggvrrZgWDAPqt2uEk",
             authDomain: "fruteria-las-espinas.firebaseapp.com",
@@ -144,122 +150,166 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // VALORES INICIALES SOLICITADOS
+        // DATOS MAESTROS (Con tus nuevas credenciales)
         let data = { 
             productos: [], 
             config: { 
-                bossEmail: "espinas bellas", 
-                bossPass: "sarita 12", 
+                bossEmail: "24375245", 
+                bossPass: "sarita12", 
                 whatsapp: "573223753362", 
-                logo: "https://via.placeholder.com/150", 
+                logo: "https://cdn-icons-png.flaticon.com/512/1625/1625048.png", 
                 nombre: "Frutería Las Espinas Bellas", 
-                lema: "Frescura que enamora" 
+                lema: "Del campo a su mesa con amor" 
             }
         };
         
         let currentUser = localStorage.getItem('user') || null;
         let isBoss = localStorage.getItem('isBoss') === 'true';
 
-        // Escuchar cambios de la nube
+        // SINCRONIZACIÓN EN TIEMPO REAL
         db.ref('/').on('value', snap => {
             if(snap.exists()) {
                 data = snap.val();
                 render();
                 if(currentUser) updateUI();
+            } else {
+                saveCloud(); // Inicializar si la DB está vacía
             }
         });
 
+        // LOGIN MEJORADO SIN ERRORES DE RUTA
         function loginAll() {
-            const id = document.getElementById('login-id').value.trim();
-            const pass = document.getElementById('login-pass').value.trim();
+            const idInput = document.getElementById('login-id').value.trim();
+            const passInput = document.getElementById('login-pass').value.trim();
 
-            // Validación Modo Jefe
-            if(id === data.config.bossEmail && pass === data.config.bossPass) {
-                isBoss = true; currentUser = "Jefe Samuel";
-                localStorage.setItem('user', 'Jefe Samuel');
+            if(!idInput || !passInput) return showToast("⚠️ Complete los campos");
+
+            // 1. CHEQUEO MODO JEFE (Comparación directa de texto)
+            if(idInput === data.config.bossEmail && passInput === data.config.bossPass) {
+                isBoss = true; 
+                currentUser = "Dueño";
+                localStorage.setItem('user', 'Dueño');
                 localStorage.setItem('isBoss', 'true');
-                showToast("🔓 Acceso concedido, Jefe");
+                showToast("✅ Modo Administrador: ACTIVADO");
                 updateUI(); closeModal('modal-login'); render();
                 return;
             }
 
-            // Validación Clientes (Firebase)
-            const safePath = id.replace(/\./g, '_');
+            // 2. CHEQUEO CLIENTES (Limpieza de ruta para Firebase)
+            const safePath = idInput.toLowerCase().replace(/\./g, '_').replace(/\s+/g, '_');
             db.ref('users/' + safePath).once('value', snap => {
-                const ud = snap.val();
-                if(ud && ud.pass === pass) {
-                    currentUser = ud.name;
-                    localStorage.setItem('user', ud.name);
+                const user = snap.val();
+                if(user && user.pass === passInput) {
+                    currentUser = user.name;
+                    localStorage.setItem('user', user.name);
                     localStorage.setItem('isBoss', 'false');
-                    showToast("👋 Bienvenido " + ud.name);
+                    showToast("👋 ¡Hola, " + user.name + "!");
                     updateUI(); closeModal('modal-login');
-                } else { showToast("❌ Credenciales inválidas"); }
-            });
+                } else {
+                    showToast("❌ Credenciales incorrectas");
+                }
+            }).catch(() => showToast("⚠️ Error de red"));
         }
 
         function render() {
             document.getElementById('biz-name').innerText = data.config.nombre;
             document.getElementById('biz-slogan').innerText = data.config.lema;
-            document.getElementById('cfg-whatsapp').value = data.config.whatsapp;
             document.getElementById('web-logo').src = data.config.logo;
+            document.getElementById('cfg-whatsapp').value = data.config.whatsapp;
 
             const cat = document.getElementById('catalog');
             cat.innerHTML = '';
-            (data.productos || []).forEach((p, i) => {
+            
+            if(!data.productos) data.productos = [];
+
+            data.productos.forEach((p, i) => {
                 cat.innerHTML += `
                     <div class="card">
-                        <img src="${p.imagen}">
-                        <div class="card-body">
+                        <img src="${p.imagen}" onclick="editImg(${i})">
+                        <div class="card-content">
                             <h3 contenteditable="${isBoss}" oninput="data.productos[${i}].nombre=this.innerText">${p.nombre}</h3>
                             <p contenteditable="${isBoss}" oninput="data.productos[${i}].precio=this.innerText">${p.precio}</p>
                             ${isBoss ? 
-                                `<button onclick="delP(${i})" style="color:red; background:none; border:none; cursor:pointer;">[ Eliminar ]</button>` : 
-                                `<a href="https://wa.me/${data.config.whatsapp}?text=Me interesa: ${p.nombre}" target="_blank" class="btn btn-pedir">Pedir Producto</a>`
+                                `<button onclick="delP(${i})" style="color:var(--peligro); background:none; border:none; cursor:pointer; font-weight:700">[ ELIMINAR ]</button>` : 
+                                `<a href="https://wa.me/${data.config.whatsapp}?text=Hola! Quiero comprar: ${p.nombre}" target="_blank" class="btn btn-pedir">Pedir por WhatsApp</a>`
                             }
                         </div>
                     </div>`;
             });
         }
 
+        // FUNCIONES ADMINISTRATIVAS
         function updateBossSettings() {
-            const newId = document.getElementById('new-boss-id').value.trim();
-            const newPass = document.getElementById('new-boss-pass').value.trim();
-
-            if(newId) data.config.bossEmail = newId;
-            if(newPass) data.config.bossPass = newPass;
+            const nid = document.getElementById('new-boss-id').value.trim();
+            const nps = document.getElementById('new-boss-pass').value.trim();
+            if(nid) data.config.bossEmail = nid;
+            if(nps) data.config.bossPass = nps;
             data.config.whatsapp = document.getElementById('cfg-whatsapp').value;
-
-            showToast("✅ Seguridad actualizada");
+            showToast("💾 Configuración lista para guardar");
             toggleSidebar();
         }
 
-        function saveCloud() {
-            db.ref('/').set(data).then(() => showToast("📁 Nube actualizada con éxito ✅"));
-        }
-
         function addProduct() {
-            if(!data.productos) data.productos = [];
-            data.productos.push({ nombre: "Nuevo Item", precio: "$0.00", imagen: "https://via.placeholder.com/300" });
+            data.productos.push({ 
+                nombre: "Nombre del Producto", 
+                precio: "$0.000", 
+                imagen: "https://via.placeholder.com/300?text=Nueva+Fruta" 
+            });
             render();
+            showToast("✨ Producto añadido a la lista");
         }
 
-        function delP(i) { if(confirm("¿Borrar?")) { data.productos.splice(i, 1); render(); } }
+        function delP(i) {
+            if(confirm("¿Estás seguro de eliminar este producto?")) {
+                data.productos.splice(i, 1);
+                render();
+            }
+        }
 
+        function editImg(i) {
+            if(isBoss) {
+                const url = prompt("Pegue la URL de la nueva imagen:", data.productos[i].imagen);
+                if(url) { data.productos[i].imagen = url; render(); }
+            }
+        }
+
+        function saveCloud() {
+            db.ref('/').set(data)
+                .then(() => showToast("☁️ ¡Todo guardado en la nube!"))
+                .catch(() => showToast("❌ Error al guardar"));
+        }
+
+        function changeLogo() {
+            if(isBoss) {
+                const url = prompt("URL del nuevo Logo (HTTPS):");
+                if(url) { data.config.logo = url; render(); }
+            }
+        }
+
+        // UTILIDADES DE INTERFAZ
         function updateUI() {
             document.getElementById('auth-buttons').classList.add('hidden');
             document.getElementById('user-info').classList.remove('hidden');
             document.getElementById('nav-username').innerText = currentUser;
-            if(isBoss) document.getElementById('admin-bar').style.display = 'flex';
+            if(isBoss) {
+                document.getElementById('admin-bar').style.display = 'flex';
+                document.getElementById('nav-img').src = "https://cdn-icons-png.flaticon.com/512/6024/6024190.png";
+            }
         }
 
         function logout() { localStorage.clear(); location.reload(); }
         function exitBoss() { isBoss = false; localStorage.setItem('isBoss', 'false'); document.getElementById('admin-bar').style.display = 'none'; render(); }
-        function toggleSidebar() { const s = document.getElementById('admin-sidebar'); s.style.display = (s.style.display === 'flex') ? 'none' : 'flex'; }
         function openModal(id) { document.getElementById(id).style.display = 'flex'; }
         function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function toggleSidebar() { const s = document.getElementById('admin-sidebar'); s.style.display = (s.style.display === 'flex') ? 'none' : 'flex'; }
         function toggleDrop() { const d = document.getElementById('user-drop'); d.style.display = (d.style.display === 'block') ? 'none' : 'block'; }
-        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 3000); }
-        function changeLogo() { if(isBoss) { const l = prompt("URL de la imagen del logo:"); if(l) { data.config.logo = l; render(); } } }
+        
+        function showToast(m) { 
+            const t = document.getElementById('toast'); 
+            t.innerText = m; 
+            t.style.display = 'block'; 
+            setTimeout(() => t.style.display = 'none', 3500); 
+        }
     </script>
 </body>
 </html>
