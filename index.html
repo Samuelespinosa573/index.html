@@ -3,277 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espinas Bellas | Sistema Profesional</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Espinas Bellas | Tienda Oficial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
 
     <style>
         :root {
-            --verde: #2d6a4f; --amarillo: #ffca3a; --oscuro: #1b1b1b;
-            --blanco: #ffffff; --rojo: #ff595e; --azul: #3a86ff;
+            --verde-premium: #1b4332;
+            --dorado: #d4af37;
+            --blanco: #ffffff;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
-        body { background: #f8f9fa; color: #333; transition: 0.3s; }
+        body { 
+            margin: 0; 
+            font-family: 'Poppins', sans-serif; 
+            background-color: #f9f9f9; 
+            color: #333;
+        }
 
-        /* HEADER */
+        /* HEADER CENTRALIZADO */
         header {
-            background: var(--verde); color: white; padding: 12px 5%;
-            display: flex; justify-content: space-between; align-items: center;
-            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1490818387583-1baba5e638af?auto=format&fit=crop&w=1300&q=80');
+            background-size: cover;
+            background-position: center;
+            padding: 60px 20px;
+            text-align: center;
+            color: var(--blanco);
         }
-        .logo-box { display: flex; align-items: center; gap: 12px; cursor: pointer; }
-        #store-logo { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; background: white; border: 2px solid var(--amarillo); }
-        
-        .btn-top { background: var(--amarillo); color: #333; border: none; padding: 8px 18px; border-radius: 12px; font-weight: 700; cursor: pointer; }
 
-        /* SIDEBAR (SOLO CLIENTE) */
-        .sidebar {
-            position: fixed; top: 0; right: -100%; width: 320px; height: 100%;
-            background: white; z-index: 2000; transition: 0.4s; padding: 30px 20px;
-            box-shadow: -5px 0 20px rgba(0,0,0,0.2); overflow-y: auto;
+        .brand-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
         }
-        .sidebar.active { right: 0; }
-        .side-section { background: #f4f4f4; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
 
-        /* MODAL JEFE (ACCESO SEGURO) */
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000;
+        #store-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--dorado);
+            object-fit: cover;
+            background: white;
+            box-shadow: var(--shadow);
+            cursor: pointer;
         }
-        .modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; width: 90%; max-width: 380px; }
 
-        /* INPUTS & BOTONES */
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; }
-        .btn-action { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-top: 5px; }
-        .btn-v { background: var(--verde); color: white; }
-        .btn-a { background: var(--azul); color: white; }
+        #store-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 2px;
+        }
 
-        /* HERO & CATALOG */
-        .hero { height: 260px; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200') center/cover; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding: 40px 5%; padding-bottom: 100px; }
-        .card { background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 5px 15px rgba(0,0,0,0.05); text-align: center; }
-        .card img { width: 100%; height: 200px; object-fit: cover; cursor: pointer; }
+        .slogan {
+            font-weight: 300;
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
 
-        /* MODO ADMIN */
-        .admin-panel, .footer-admin { display: none; }
-        body.admin-mode .admin-panel, body.admin-mode .footer-admin { display: block; }
-        body.admin-mode .btn-client-only { display: none; }
+        /* CUADRÍCULA DE PRODUCTOS */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 50px 8%;
+            margin-bottom: 100px;
+        }
 
-        .footer-admin { position: fixed; bottom: 0; width: 100%; background: var(--oscuro); padding: 15px; text-align: center; z-index: 1500; }
+        .card {
+            background: white;
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
 
-        /* TOAST CONFIRMACIÓN */
-        #toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 25px; border-radius: 50px; display: none; z-index: 5000; }
+        .card:hover { transform: translateY(-10px); }
+
+        .card img { width: 100%; height: 220px; object-fit: cover; }
+
+        .card-body { padding: 20px; text-align: center; }
+
+        .card h3 { margin: 10px 0; font-size: 1.4rem; color: var(--verde-premium); }
+
+        /* BARRA DE HERRAMIENTAS (MODO JEFE) */
+        .admin-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #111;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            z-index: 2000;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-save { background: #3a86ff; color: white; }
+        .btn-add { background: #2d6a4f; color: white; }
+        .btn-exit { background: #ff595e; color: white; }
+
+        [contenteditable="true"]:focus {
+            outline: 2px solid var(--dorado);
+            background: rgba(212, 175, 55, 0.1);
+        }
     </style>
 </head>
-<body id="app-body">
-
-    <div id="toast">Cambios Guardados 💾</div>
+<body>
 
     <header>
-        <div class="logo-box" onclick="editIdentity('logo')">
-            <img src="" id="store-logo" alt="Logo">
-            <h1 id="store-name" style="font-size: 1.3rem;">Espinas Bellas</h1>
-        </div>
-        <div>
-            <button class="btn-top btn-client-only" onclick="toggleSidebar()">Mi Cuenta</button>
-            <button class="btn-top btn-client-only" style="background: white; margin-left:5px;" onclick="openBossModal()">Dueño</button>
-            <button class="btn-top admin-panel" style="background: white;" onclick="toggleSidebar()">Panel Jefe ⚙️</button>
+        <div class="brand-container">
+            <img src="https://via.placeholder.com/150" id="store-logo" onclick="editLogo()" title="Click para cambiar logo">
+            <h1 id="store-name" contenteditable="true">Espinas Bellas</h1>
+            <p class="slogan" id="store-slogan" contenteditable="true">Calidad en cada bocado</p>
         </div>
     </header>
 
-    <aside class="sidebar" id="sidebar">
-        <h2 id="side-title">Opciones</h2>
-        
-        <div id="client-section" class="side-section btn-client-only">
-            <h4>Acceso Cliente</h4>
-            <input type="email" id="c-email" placeholder="Correo">
-            <input type="password" id="c-pass" placeholder="Contraseña">
-            <button class="btn-action btn-v" onclick="authClient('login')">Entrar</button>
-            <button class="btn-action" style="background: #eee;" onclick="authClient('signup')">Crear Cuenta</button>
-        </div>
-
-        <div class="admin-panel side-section">
-            <h4>Gestión de Credenciales</h4>
-            <input type="password" id="old-pass" placeholder="Clave Anterior">
-            <input type="text" id="new-id" placeholder="Nuevo ID Jefe">
-            <input type="password" id="new-pass" placeholder="Nueva Clave Jefe">
-            <button class="btn-action btn-a" onclick="updateBossAuth()">Actualizar Credenciales</button>
-        </div>
-
-        <div class="admin-panel side-section">
-            <h4>Configuración Contacto</h4>
-            <input type="text" id="edit-wa" placeholder="WhatsApp (Ej: 57322...)">
-            <button class="btn-action btn-v" onclick="updateContact()">Guardar WhatsApp</button>
-        </div>
-
-        <div class="side-section">
-            <h4>Sección Legal</h4>
-            <p style="font-size: 0.8rem; color: #888;">Términos y Condiciones: Fruta 100% fresca. Pedidos válidos solo por WhatsApp. Entrega en 24h.</p>
-        </div>
-
-        <button class="btn-action" style="background:#ddd" onclick="toggleSidebar()">Regresar</button>
-    </aside>
-
-    <div class="modal" id="boss-modal">
-        <div class="modal-content">
-            <h3>Acceso Seguro</h3>
-            <p style="margin: 10px 0; font-size: 0.9rem; color: #666;">ingrese su usuario y contraseña para inicias sus compras</p>
-            <input type="text" id="b-id" placeholder="ID Dueño">
-            <input type="password" id="b-pass" placeholder="Contraseña">
-            <button class="btn-action btn-v" onclick="handleBossLogin()">Entrar al Sistema</button>
-            <p onclick="closeBossModal()" style="margin-top:15px; color:var(--rojo); cursor:pointer; font-weight:600;">Cancelar</p>
-        </div>
-    </div>
-
-    <section class="hero">
-        <h1 id="hero-name" style="font-size: 2.5rem; cursor:pointer;" onclick="editIdentity('name')">Espinas Bellas</h1>
-        <p id="hero-slogan" style="cursor:pointer;" onclick="editIdentity('slogan')">Las mejores frutas de la región</p>
-    </section>
-
     <main class="grid" id="product-grid"></main>
 
-    <footer class="footer-admin">
-        <button class="btn-top" style="background:#4caf50; color:white;" onclick="addProduct()">+ Nueva Fruta</button>
-        <button class="btn-top" style="background:var(--azul); color:white;" onclick="syncAll()">💾 GUARDAR CAMBIOS</button>
-        <button class="btn-top" style="background:var(--rojo); color:white;" onclick="logoutBoss()">Salir</button>
-    </footer>
+    <div class="admin-bar" id="admin-controls">
+        <input type="text" id="wa-num" placeholder="WhatsApp: 57322..." style="padding:10px; border-radius:10px;">
+        <button class="btn-add" onclick="createNewProduct()">+ Fruta</button>
+        <button class="btn-save" onclick="syncAllData()">💾 GUARDAR CAMBIOS</button>
+        <button class="btn-exit" onclick="location.reload()">Salir</button>
+    </div>
 
     <script>
-        // 1. CONFIGURACIÓN FIREBASE
+        // Configuración de Firebase - REEMPLAZAR CON TUS DATOS REALES
         const firebaseConfig = {
-            apiKey: "AIzaSy...", // RECOMIENDO poner tu API Key real aquí
             databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        const auth = firebase.auth();
 
-        let isBoss = false;
-        let config = { 
-            name: "Espinas Bellas", slogan: "Felicidad en cada bocado", 
-            logo: "https://cdn-icons-png.flaticon.com/512/3194/3194591.png",
-            whatsapp: "573223753362",
-            boss: { id: "24375245", pass: "1234" } 
-        };
-
-        // --- INTERFAZ ---
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
-        function openBossModal() { document.getElementById('boss-modal').style.display = 'flex'; }
-        function closeBossModal() { document.getElementById('boss-modal').style.display = 'none'; }
-        function showToast(m) { const t=document.getElementById('toast'); t.innerText=m; t.style.display='block'; setTimeout(()=>t.style.display='none',3000); }
-
-        // --- ACCESO JEFE ---
-        function handleBossLogin() {
-            const id = document.getElementById('b-id').value;
-            const pass = document.getElementById('b-pass').value;
-            if(id === config.boss.id && pass === config.boss.pass) {
-                isBoss = true;
-                document.getElementById('app-body').classList.add('admin-mode');
-                closeBossModal();
-                showToast("Modo Dueño: Activado 👑");
-                toggleSidebar(); // Abre el panel de control automáticamente
-            } else { alert("Datos incorrectos"); }
-        }
-
-        function logoutBoss() { location.reload(); }
-
-        // --- GESTIÓN CREDENCIALES (REQUISITO 1) ---
-        function updateBossAuth() {
-            const old = document.getElementById('old-pass').value;
-            const nid = document.getElementById('new-id').value;
-            const npass = document.getElementById('new-pass').value;
-            if(old !== config.boss.pass) return alert("La contraseña anterior no es correcta");
-            if(nid && npass) {
-                db.ref('config/boss').set({ id: nid, pass: npass }).then(()=>showToast("Credenciales Actualizadas 💾"));
+        // 1. Cargar datos inicialmente
+        db.ref('/').on('value', (snapshot) => {
+            const data = snapshot.val() || {};
+            if(data.config) {
+                document.getElementById('store-name').innerText = data.config.name || "Espinas Bellas";
+                document.getElementById('store-slogan').innerText = data.config.slogan || "Calidad en cada bocado";
+                document.getElementById('store-logo').src = data.config.logo || "https://via.placeholder.com/150";
+                document.getElementById('wa-num').value = data.config.whatsapp || "";
             }
-        }
+            renderProducts(data.productos);
+        });
 
-        // --- EDICIÓN DE IDENTIDAD ---
-        function editIdentity(part) {
-            if(!isBoss) return;
-            const val = prompt("Nuevo valor:");
-            if(!val) return;
-            if(part === 'logo') db.ref('config/logo').set(val);
-            if(part === 'name') db.ref('config/name').set(val);
-            if(part === 'slogan') db.ref('config/slogan').set(val);
-        }
-
-        function updateContact() {
-            const wa = document.getElementById('edit-wa').value;
-            if(wa) db.ref('config/whatsapp').set(wa).then(()=>showToast("WhatsApp Actualizado ✅"));
-        }
-
-        // --- PRODUCTOS ---
         function renderProducts(productos) {
-            const grid = document.getElementById('product-grid');
-            grid.innerHTML = "";
+            const container = document.getElementById('product-grid');
+            container.innerHTML = "";
             for(let key in productos) {
                 const p = productos[key];
-                const reviews = p.reseñas ? Object.values(p.reseñas).map(r => `<div style="font-size:0.7rem; border-bottom:1px solid #eee; padding:3px"><b>${r.user}:</b> ${r.text}</div>`).join('') : "Sin opiniones";
-                
-                grid.innerHTML += `
-                    <div class="card">
-                        <img src="${p.imagen}" onclick="if(isBoss) editImage('${key}')">
-                        <div style="padding:15px">
-                            <h3 contenteditable="${isBoss}" id="n-${key}">${p.nombre}</h3>
-                            <p contenteditable="${isBoss}" id="p-${key}">${p.precio}</p>
-                            <button class="btn-action btn-v" onclick="order('${p.nombre}')">Pedir WhatsApp</button>
-                            <div style="margin-top:10px; text-align:left; background:#f9f9f9; padding:8px; border-radius:8px;">
-                                <p style="font-size:0.7rem; font-weight:700">Opiniones:</p>
-                                ${reviews}
-                                <input type="text" placeholder="Tu opinión..." style="font-size:0.7rem; padding:5px" onkeydown="if(event.key==='Enter') addReview('${key}', this.value)">
-                            </div>
-                            ${isBoss ? `<button onclick="deleteProd('${key}')" style="color:red; background:none; border:none; margin-top:10px; cursor:pointer; font-size:0.8rem;">Eliminar 🗑️</button>` : ''}
+                container.innerHTML += `
+                    <div class="card" id="card-${key}">
+                        <img src="${p.imagen}" onclick="editProductImg('${key}')">
+                        <div class="card-body">
+                            <h3 contenteditable="true" class="p-name">${p.nombre}</h3>
+                            <p contenteditable="true" class="p-price">${p.precio}</p>
+                            <button onclick="deleteProduct('${key}')" style="color:red; background:none; font-size:0.8rem;">Eliminar</button>
                         </div>
                     </div>
                 `;
             }
         }
 
-        function order(item) { window.open(`https://wa.me/${config.whatsapp}?text=Hola, quiero pedir ${item}`, '_blank'); }
-
-        function addProduct() {
-            const k = db.ref('productos').push().key;
-            db.ref('productos/'+k).set({ nombre: "Nueva Fruta", precio: "$0.000", imagen: "https://via.placeholder.com/400" });
-        }
-
-        function deleteProd(k) { if(confirm("¿Eliminar?")) db.ref('productos/'+k).remove().then(()=>showToast("Producto eliminado 🗑️")); }
-
-        function editImage(k) { const u = prompt("URL Imagen:"); if(u) db.ref('productos/'+k+'/imagen').set(u); }
-
-        function addReview(k, txt) {
-            if(!txt) return;
-            const rKey = db.ref('productos/'+k+'/reseñas').push().key;
-            db.ref('productos/'+k+'/reseñas/'+rKey).set({ user: "Cliente", text: txt }).then(()=>showToast("Opinión guardada ✅"));
-        }
-
-        // --- SINCRONIZACIÓN FINAL ---
-        function syncAll() {
+        // 2. FUNCIÓN DE GUARDADO CORREGIDA
+        function syncAllData() {
             const updates = {};
+            
+            // Guardar Configuración General
+            updates['config/name'] = document.getElementById('store-name').innerText;
+            updates['config/slogan'] = document.getElementById('store-slogan').innerText;
+            updates['config/whatsapp'] = document.getElementById('wa-num').value;
+            updates['config/logo'] = document.getElementById('store-logo').src;
+
+            // Guardar Productos (Recorrer las tarjetas)
             document.querySelectorAll('.card').forEach(card => {
-                const id = card.querySelector('h3').id.split('-')[1];
-                updates[`productos/${id}/nombre`] = document.getElementById('n-'+id).innerText;
-                updates[`productos/${id}/precio`] = document.getElementById('p-'+id).innerText;
+                const id = card.id.replace('card-', '');
+                updates[`productos/${id}/nombre`] = card.querySelector('.p-name').innerText;
+                updates[`productos/${id}/precio`] = card.querySelector('.p-price').innerText;
+                // La imagen se actualiza individualmente o se puede extraer del src
+                updates[`productos/${id}/imagen`] = card.querySelector('img').src;
             });
-            db.ref().update(updates).then(() => showToast("Cambios Guardados 💾"));
+
+            db.ref().update(updates)
+                .then(() => alert("¡Todo se guardó correctamente en Firebase! ✅"))
+                .catch(err => alert("Error al guardar: " + err.message));
         }
 
-        // --- ESCUCHA TIEMPO REAL ---
-        db.ref('/').on('value', snap => {
-            const data = snap.val() || {};
-            if(data.config) {
-                config = {...config, ...data.config};
-                document.getElementById('store-name').innerText = config.name;
-                document.getElementById('hero-name').innerText = config.name;
-                document.getElementById('hero-slogan').innerText = config.slogan;
-                document.getElementById('store-logo').src = config.logo;
-            }
-            renderProducts(data.productos);
-        });
+        // Funciones auxiliares
+        function editLogo() {
+            const url = prompt("Pega la URL de la nueva imagen del logo:");
+            if(url) document.getElementById('store-logo').src = url;
+        }
+
+        function editProductImg(id) {
+            const url = prompt("Nueva URL de imagen para este producto:");
+            if(url) document.querySelector(`#card-${id} img`).src = url;
+        }
+
+        function createNewProduct() {
+            const newKey = db.ref('productos').push().key;
+            const item = { nombre: "Nueva Fruta", precio: "$0.000", imagen: "https://via.placeholder.com/400" };
+            db.ref('productos/' + newKey).set(item);
+        }
+
+        function deleteProduct(id) {
+            if(confirm("¿Eliminar este producto?")) db.ref('productos/' + id).remove();
+        }
     </script>
 </body>
 </html>
