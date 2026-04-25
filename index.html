@@ -3,228 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espinas Bellas | Tienda Oficial</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Espinas Bellas | Tienda Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
 
     <style>
         :root {
-            --verde-premium: #1b4332;
+            --verde: #2d6a4f; --amarillo: #ffca3a; --oscuro: #1b1b1b;
+            --blanco: #ffffff; --rojo: #ff595e; --azul: #3a86ff;
             --dorado: #d4af37;
-            --blanco: #ffffff;
-            --shadow: 0 10px 30px rgba(0,0,0,0.1);
         }
 
-        body { 
-            margin: 0; 
-            font-family: 'Poppins', sans-serif; 
-            background-color: #f9f9f9; 
-            color: #333;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background: #fdfdfd; color: #333; overflow-x: hidden; }
 
-        /* HEADER CENTRALIZADO */
+        /* HEADER Y LOGO CENTRAL */
         header {
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1490818387583-1baba5e638af?auto=format&fit=crop&w=1300&q=80');
-            background-size: cover;
-            background-position: center;
-            padding: 60px 20px;
-            text-align: center;
-            color: var(--blanco);
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200');
+            background-size: cover; background-position: center;
+            padding: 50px 20px; text-align: center; color: white;
+            border-bottom: 5px solid var(--amarillo);
         }
 
-        .brand-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
+        .brand-box { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        
         #store-logo {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            border: 4px solid var(--dorado);
-            object-fit: cover;
-            background: white;
-            box-shadow: var(--shadow);
-            cursor: pointer;
+            width: 140px; height: 140px; border-radius: 50%;
+            object-fit: cover; background: white;
+            border: 4px solid var(--amarillo);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            cursor: pointer; transition: 0.3s;
         }
+        #store-logo:hover { transform: scale(1.05); }
 
         #store-name {
             font-family: 'Playfair Display', serif;
-            font-size: 3.5rem;
-            margin: 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            letter-spacing: 2px;
+            font-size: 3.5rem; letter-spacing: -1px;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.5);
+        }
+        #store-slogan { font-weight: 300; font-size: 1.2rem; opacity: 0.9; }
+
+        /* BARRA DE NAVEGACIÓN */
+        nav {
+            background: var(--verde); padding: 10px 5%;
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 1000;
         }
 
-        .slogan {
-            font-weight: 300;
-            font-size: 1.2rem;
-            opacity: 0.9;
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed; top: 0; right: -100%; width: 320px; height: 100%;
+            background: white; z-index: 2000; transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 30px 20px; box-shadow: -10px 0 30px rgba(0,0,0,0.2); overflow-y: auto;
         }
+        .sidebar.active { right: 0; }
+        .side-section { background: #f7f7f7; padding: 15px; border-radius: 15px; margin-bottom: 15px; }
 
-        /* CUADRÍCULA DE PRODUCTOS */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 30px;
-            padding: 50px 8%;
-            margin-bottom: 100px;
+        /* GRID DE PRODUCTOS */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; padding: 40px 8%; margin-bottom: 100px; }
+        .card { background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.06); transition: 0.3s; border: 1px solid #eee; }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 230px; object-fit: cover; cursor: pointer; }
+        .card-info { padding: 20px; text-align: center; }
+        .card-info h3 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--verde); }
+
+        /* MODAL ACCESO SEGURO */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 3000;
         }
+        .modal-content { background: white; padding: 40px; border-radius: 30px; text-align: center; width: 90%; max-width: 400px; }
 
-        .card {
-            background: white;
-            border-radius: 25px;
-            overflow: hidden;
-            box-shadow: var(--shadow);
-            transition: transform 0.3s ease;
-            position: relative;
+        /* BOTONES */
+        button { padding: 12px 25px; border: none; border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+        .btn-y { background: var(--amarillo); color: #333; }
+        .btn-v { background: var(--verde); color: white; }
+        .btn-r { background: var(--rojo); color: white; }
+        
+        /* FOOTER ADMIN */
+        .footer-admin {
+            position: fixed; bottom: 0; width: 100%; background: var(--oscuro);
+            padding: 15px; display: none; justify-content: center; gap: 15px; z-index: 1500;
         }
-
-        .card:hover { transform: translateY(-10px); }
-
-        .card img { width: 100%; height: 220px; object-fit: cover; }
-
-        .card-body { padding: 20px; text-align: center; }
-
-        .card h3 { margin: 10px 0; font-size: 1.4rem; color: var(--verde-premium); }
-
-        /* BARRA DE HERRAMIENTAS (MODO JEFE) */
-        .admin-bar {
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            background: #111;
-            padding: 15px;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            z-index: 2000;
-        }
-
-        button {
-            padding: 12px 25px;
-            border: none;
-            border-radius: 50px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .btn-save { background: #3a86ff; color: white; }
-        .btn-add { background: #2d6a4f; color: white; }
-        .btn-exit { background: #ff595e; color: white; }
-
-        [contenteditable="true"]:focus {
-            outline: 2px solid var(--dorado);
-            background: rgba(212, 175, 55, 0.1);
-        }
+        body.admin-mode .footer-admin { display: flex; }
+        
+        /* UTILIDADES */
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; }
+        .toast { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 10px 30px; border-radius: 50px; display: none; z-index: 5000; }
+        [contenteditable="true"]:focus { outline: 2px dashed var(--amarillo); background: #fffdf5; }
     </style>
 </head>
-<body>
+<body id="main-app">
+
+    <div id="toast" class="toast">Guardado con éxito ✅</div>
+
+    <nav>
+        <div style="color:white; font-weight:700;">Espinas Bellas Online</div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-y" style="padding:6px 15px;" onclick="toggleSidebar()">Cuenta</button>
+            <button id="btn-boss-trigger" class="btn-y" style="background:white;" onclick="openBossModal()">Dueño</button>
+        </div>
+    </nav>
 
     <header>
-        <div class="brand-container">
-            <img src="https://via.placeholder.com/150" id="store-logo" onclick="editLogo()" title="Click para cambiar logo">
-            <h1 id="store-name" contenteditable="true">Espinas Bellas</h1>
-            <p class="slogan" id="store-slogan" contenteditable="true">Calidad en cada bocado</p>
+        <div class="brand-box">
+            <img src="" id="store-logo" onclick="if(isBoss) editLogo()" alt="Logo">
+            <h1 id="store-name" contenteditable="false">Espinas Bellas</h1>
+            <p id="store-slogan" contenteditable="false">Calidad y Frescura en tu hogar</p>
         </div>
     </header>
 
     <main class="grid" id="product-grid"></main>
 
-    <div class="admin-bar" id="admin-controls">
-        <input type="text" id="wa-num" placeholder="WhatsApp: 57322..." style="padding:10px; border-radius:10px;">
-        <button class="btn-add" onclick="createNewProduct()">+ Fruta</button>
-        <button class="btn-save" onclick="syncAllData()">💾 GUARDAR CAMBIOS</button>
-        <button class="btn-exit" onclick="location.reload()">Salir</button>
+    <aside class="sidebar" id="sidebar">
+        <h2 style="color:var(--verde); border-bottom:3px solid var(--amarillo); padding-bottom:10px;">Mi Cuenta</h2>
+        
+        <div id="client-ui" class="side-section">
+            <input type="email" id="c-email" placeholder="Email">
+            <input type="password" id="c-pass" placeholder="Password">
+            <button class="btn-v" style="width:100%" onclick="authAction('login')">Ingresar</button>
+            <button class="btn-y" style="width:100%; margin-top:5px;" onclick="authAction('signup')">Registrarse</button>
+        </div>
+
+        <div id="boss-ui" style="display:none;">
+            <div class="side-section">
+                <h4>Gestión de Credenciales</h4>
+                <input type="password" id="old-p" placeholder="Clave Anterior">
+                <input type="text" id="new-id" placeholder="Nuevo ID">
+                <input type="password" id="new-p" placeholder="Nueva Clave">
+                <button class="btn-v" style="width:100%" onclick="updateAuth()">Actualizar Jefe</button>
+            </div>
+            <div class="side-section">
+                <h4>Contacto de Ventas</h4>
+                <input type="text" id="wa-num" placeholder="WhatsApp (Ej: 57322...)">
+                <button class="btn-v" style="width:100%" onclick="updateWA()">Guardar Número</button>
+            </div>
+        </div>
+        
+        <button class="btn-r" style="width:100%; margin-top:20px;" onclick="toggleSidebar()">Cerrar Menú</button>
+    </aside>
+
+    <div class="modal" id="boss-modal">
+        <div class="modal-content">
+            <h3 style="font-family:'Playfair Display'; font-size:2rem;">Acceso Seguro</h3>
+            <p style="font-size:0.8rem; color:#666; margin:10px 0;">Ingrese sus credenciales de administración</p>
+            <input type="text" id="login-id" placeholder="ID de Jefe">
+            <input type="password" id="login-pass" placeholder="Contraseña">
+            <button class="btn-v" style="width:100%" onclick="loginBoss()">Entrar al Sistema</button>
+            <p onclick="closeBossModal()" style="margin-top:20px; color:var(--rojo); cursor:pointer; font-weight:700;">Cancelar</p>
+        </div>
     </div>
 
+    <footer class="footer-admin">
+        <button class="btn-v" onclick="addProduct()">+ Fruta</button>
+        <button class="btn-y" style="background:var(--azul); color:white;" onclick="syncAll()">💾 GUARDAR CAMBIOS</button>
+        <button class="btn-r" onclick="location.reload()">Cerrar Sesión Jefe</button>
+    </footer>
+
     <script>
-        // Configuración de Firebase - REEMPLAZAR CON TUS DATOS REALES
+        // CONFIGURACIÓN FIREBASE
         const firebaseConfig = {
             databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 1. Cargar datos inicialmente
-        db.ref('/').on('value', (snapshot) => {
-            const data = snapshot.val() || {};
-            if(data.config) {
-                document.getElementById('store-name').innerText = data.config.name || "Espinas Bellas";
-                document.getElementById('store-slogan').innerText = data.config.slogan || "Calidad en cada bocado";
-                document.getElementById('store-logo').src = data.config.logo || "https://via.placeholder.com/150";
-                document.getElementById('wa-num').value = data.config.whatsapp || "";
-            }
-            renderProducts(data.productos);
-        });
+        let isBoss = false;
+        let config = { id: "24375245", pass: "1234", wa: "573223753362" };
 
-        function renderProducts(productos) {
-            const container = document.getElementById('product-grid');
-            container.innerHTML = "";
-            for(let key in productos) {
-                const p = productos[key];
-                container.innerHTML += `
-                    <div class="card" id="card-${key}">
-                        <img src="${p.imagen}" onclick="editProductImg('${key}')">
-                        <div class="card-body">
-                            <h3 contenteditable="true" class="p-name">${p.nombre}</h3>
-                            <p contenteditable="true" class="p-price">${p.precio}</p>
-                            <button onclick="deleteProduct('${key}')" style="color:red; background:none; font-size:0.8rem;">Eliminar</button>
-                        </div>
-                    </div>
-                `;
-            }
+        // --- FUNCIONES CORE ---
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+        function openBossModal() { document.getElementById('boss-modal').style.display = 'flex'; }
+        function closeBossModal() { document.getElementById('boss-modal').style.display = 'none'; }
+        function toast() { 
+            const t = document.getElementById('toast'); 
+            t.style.display = 'block'; 
+            setTimeout(() => t.style.display='none', 3000); 
         }
 
-        // 2. FUNCIÓN DE GUARDADO CORREGIDA
-        function syncAllData() {
+        // --- LÓGICA JEFE ---
+        function loginBoss() {
+            const id = document.getElementById('login-id').value;
+            const pass = document.getElementById('login-pass').value;
+            if(id === config.id && pass === config.pass) {
+                isBoss = true;
+                document.body.classList.add('admin-mode');
+                document.getElementById('boss-ui').style.display = 'block';
+                document.getElementById('client-ui').style.display = 'none';
+                document.getElementById('btn-boss-trigger').style.display = 'none';
+                document.getElementById('store-name').contentEditable = true;
+                document.getElementById('store-slogan').contentEditable = true;
+                closeBossModal();
+                toast();
+                loadProducts();
+            } else { alert("Acceso Denegado"); }
+        }
+
+        function updateAuth() {
+            const old = document.getElementById('old-p').value;
+            const nid = document.getElementById('new-id').value;
+            const np = document.getElementById('new-p').value;
+            if(old !== config.pass) return alert("Clave anterior incorrecta");
+            db.ref('config/boss').set({ id: nid, pass: np }).then(() => alert("Credenciales actualizadas"));
+        }
+
+        function updateWA() {
+            const num = document.getElementById('wa-num').value;
+            db.ref('config/wa').set(num).then(() => alert("WhatsApp actualizado"));
+        }
+
+        // --- PRODUCTOS (CRUD) ---
+        function loadProducts() {
+            db.ref('productos').on('value', snap => {
+                const grid = document.getElementById('product-grid');
+                grid.innerHTML = "";
+                snap.forEach(child => {
+                    const p = child.val();
+                    grid.innerHTML += `
+                        <div class="card" data-id="${child.key}">
+                            <img src="${p.imagen}" onclick="if(isBoss) editPImg('${child.key}')">
+                            <div class="card-info">
+                                <h3 contenteditable="${isBoss}" class="edit-n">${p.nombre}</h3>
+                                <p contenteditable="${isBoss}" class="edit-p">${p.precio}</p>
+                                <button class="btn-v" style="width:100%" onclick="order('${p.nombre}')">Pedir por WhatsApp</button>
+                                ${isBoss ? `<p onclick="delP('${child.key}')" style="color:red; margin-top:10px; cursor:pointer; font-size:0.8rem;">Eliminar 🗑️</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function addProduct() {
+            const k = db.ref('productos').push().key;
+            db.ref('productos/'+k).set({ nombre: "Nueva Fruta", precio: "$0.000", imagen: "https://via.placeholder.com/400" });
+        }
+
+        function delP(k) { if(confirm("¿Eliminar?")) db.ref('productos/'+k).remove(); }
+
+        function editPImg(k) {
+            const u = prompt("URL Imagen:");
+            if(u) db.ref('productos/'+k+'/imagen').set(u);
+        }
+
+        function editLogo() {
+            const u = prompt("URL del Logo:");
+            if(u) db.ref('config/logo').set(u);
+        }
+
+        // --- EL BOTÓN MÁGICO DE GUARDADO ---
+        function syncAll() {
             const updates = {};
-            
-            // Guardar Configuración General
+            // 1. Guardamos identidad
             updates['config/name'] = document.getElementById('store-name').innerText;
             updates['config/slogan'] = document.getElementById('store-slogan').innerText;
-            updates['config/whatsapp'] = document.getElementById('wa-num').value;
-            updates['config/logo'] = document.getElementById('store-logo').src;
-
-            // Guardar Productos (Recorrer las tarjetas)
+            
+            // 2. Guardamos cada producto del grid
             document.querySelectorAll('.card').forEach(card => {
-                const id = card.id.replace('card-', '');
-                updates[`productos/${id}/nombre`] = card.querySelector('.p-name').innerText;
-                updates[`productos/${id}/precio`] = card.querySelector('.p-price').innerText;
-                // La imagen se actualiza individualmente o se puede extraer del src
-                updates[`productos/${id}/imagen`] = card.querySelector('img').src;
+                const id = card.getAttribute('data-id');
+                updates[`productos/${id}/nombre`] = card.querySelector('.edit-n').innerText;
+                updates[`productos/${id}/precio`] = card.querySelector('.edit-p').innerText;
             });
 
             db.ref().update(updates)
-                .then(() => alert("¡Todo se guardó correctamente en Firebase! ✅"))
-                .catch(err => alert("Error al guardar: " + err.message));
+                .then(() => toast())
+                .catch(err => alert("Error: " + err.message));
         }
 
-        // Funciones auxiliares
-        function editLogo() {
-            const url = prompt("Pega la URL de la nueva imagen del logo:");
-            if(url) document.getElementById('store-logo').src = url;
+        function order(item) {
+            window.open(`https://wa.me/${config.wa}?text=Hola, quiero pedir ${item}`, '_blank');
         }
 
-        function editProductImg(id) {
-            const url = prompt("Nueva URL de imagen para este producto:");
-            if(url) document.querySelector(`#card-${id} img`).src = url;
-        }
+        // --- CARGA INICIAL ---
+        db.ref('config').on('value', snap => {
+            const c = snap.val();
+            if(c) {
+                if(c.boss) config = {...config, ...c.boss};
+                if(c.wa) config.wa = c.wa;
+                if(c.name) { 
+                    document.getElementById('store-name').innerText = c.name;
+                    document.title = c.name;
+                }
+                if(c.slogan) document.getElementById('store-slogan').innerText = c.slogan;
+                if(c.logo) document.getElementById('store-logo').src = c.logo;
+                document.getElementById('wa-num').value = config.wa;
+            }
+        });
 
-        function createNewProduct() {
-            const newKey = db.ref('productos').push().key;
-            const item = { nombre: "Nueva Fruta", precio: "$0.000", imagen: "https://via.placeholder.com/400" };
-            db.ref('productos/' + newKey).set(item);
-        }
-
-        function deleteProduct(id) {
-            if(confirm("¿Eliminar este producto?")) db.ref('productos/' + id).remove();
-        }
+        window.onload = loadProducts;
     </script>
 </body>
 </html>
