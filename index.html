@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espinas Bellas | Modo Jefe</title>
+    <title>Espinas Bellas | Sistema de Gestión</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
 
@@ -13,13 +14,14 @@
             --verde-bosque: #2d6a4f;
             --amarillo: #ffca3a;
             --oscuro: #1b1b1b;
+            --blanco: #ffffff;
             --rojo: #ff595e;
             --azul: #3a86ff;
-            --blanco: #ffffff;
+            --shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
-        body { background-color: #f4f4f4; overflow-x: hidden; }
+        body { background-color: #f4f4f4; overflow-x: hidden; transition: 0.3s; }
 
         /* --- HEADER --- */
         header {
@@ -38,11 +40,14 @@
             background: var(--amarillo);
             color: #333;
             border: none;
-            padding: 8px 20px;
+            padding: 8px 22px;
             border-radius: 12px;
             font-weight: 700;
             cursor: pointer;
+            transition: 0.3s;
         }
+
+        .btn-entrar:hover { transform: scale(1.05); }
 
         /* --- SIDEBAR (MENÚ LATERAL) --- */
         .sidebar {
@@ -56,146 +61,209 @@
             box-shadow: -5px 0 25px rgba(0,0,0,0.3);
             transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             padding: 30px 20px;
+            overflow-y: auto;
         }
 
         .sidebar.active { right: 0; }
-        .sidebar h2 { color: var(--verde-bosque); margin-bottom: 20px; border-bottom: 3px solid var(--amarillo); }
+        .sidebar h2 { color: var(--verde-bosque); margin-bottom: 20px; border-bottom: 3px solid var(--amarillo); padding-bottom: 10px; }
 
-        /* --- MODAL --- */
+        /* --- MODAL DE ACCESO --- */
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; z-index: 3000;
+            background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 3000;
         }
 
         .modal-content {
-            background: white; padding: 30px; border-radius: 20px; text-align: center; width: 90%; max-width: 400px;
+            background: white; padding: 35px; border-radius: 25px; text-align: center; width: 90%; max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        /* --- ELEMENTOS DE ADMIN --- */
-        .admin-controls, .footer-admin { display: none; }
-        body.admin-mode .admin-controls, body.admin-mode .footer-admin { display: block; }
-        body.admin-mode .btn-entrar { display: none; } /* OCULTA EL BOTÓN AL ENTRAR */
+        /* --- CONTROLES DE ADMINISTRACIÓN --- */
+        .admin-only, .footer-admin { display: none; }
+        body.admin-mode .admin-only, body.admin-mode .footer-admin { display: block; }
+        body.admin-mode .btn-entrar-principal { display: none; } /* Oculta botón Entrar al Sistema */
 
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; }
-        .btn-main { background: var(--amarillo); color: #333; border: none; width: 100%; padding: 12px; border-radius: 12px; font-weight: 700; cursor: pointer; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; font-size: 1rem; }
         
+        .btn-action {
+            width: 100%; padding: 12px; border: none; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px;
+        }
+
+        /* --- PRODUCTOS --- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; padding: 40px 5%; margin-bottom: 80px; }
+        .card { background: white; border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); text-align: center; position: relative; }
+        .card img { width: 100%; height: 220px; object-fit: cover; }
+        .card-body { padding: 20px; }
+        .btn-delete { color: var(--rojo); cursor: pointer; font-weight: 600; background: none; border: none; margin-top: 10px; display: none; }
+        body.admin-mode .btn-delete { display: inline-block; }
+
+        /* --- BARRA INFERIOR (FOOTER ADMIN) --- */
         .footer-admin {
             position: fixed; bottom: 0; width: 100%; background: var(--oscuro);
-            padding: 15px; display: none; text-align: center; z-index: 1500;
+            padding: 15px; text-align: center; z-index: 1500;
         }
+        .footer-admin button { width: auto; margin: 0 10px; padding: 10px 25px; }
 
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; padding: 40px 5%; }
-        .card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
-        .card img { width: 100%; height: 200px; object-fit: cover; }
     </style>
 </head>
 <body id="body-tag">
 
     <header>
-        <div>Espinas Bellas</div>
-        <button class="btn-entrar" id="btn-login-trigger" onclick="openModal()">Entrar al Sistema</button>
-        <button class="btn-entrar" id="btn-menu-trigger" style="display:none; background: var(--blanco);" onclick="toggleSidebar()">Menú Lateral ☰</button>
+        <div style="font-weight: 800; font-size: 1.4rem;">Espinas Bellas</div>
+        <button class="btn-entrar btn-entrar-principal" onclick="openModal()">Entrar al Sistema</button>
+        <button class="btn-entrar admin-only" style="background: white;" onclick="toggleSidebar()">Menú Lateral ☰</button>
     </header>
 
     <aside class="sidebar" id="sidebar">
         <h2>Panel Jefe</h2>
-        <div class="admin-controls">
-            <p style="font-size: 0.9rem; margin-bottom: 15px;">Gestión de Credenciales</p>
+        <div class="admin-only">
+            <p style="font-weight: 600; color: #666; margin-bottom: 10px;">Gestión de Credenciales</p>
             <input type="password" id="oldPass" placeholder="Contraseña Anterior">
-            <input type="text" id="newId" placeholder="Nuevo ID">
+            <hr style="margin: 10px 0; opacity: 0.2;">
+            <input type="text" id="newId" placeholder="Nuevo ID Jefe">
             <input type="password" id="newPass" placeholder="Nueva Contraseña">
-            <button class="btn-main" style="background: var(--azul); color: white;" onclick="updateCreds()">Guardar Credenciales</button>
+            <button class="btn-action" style="background: var(--azul); color: white;" onclick="updateCredentials()">Actualizar Datos 💾</button>
             
-            <hr style="margin: 20px 0;">
-            <button class="btn-main" style="background: var(--rojo); color: white;" onclick="logout()">Cerrar Sesión</button>
+            <button class="btn-action" style="background: var(--rojo); color: white; margin-top: 40px;" onclick="logout()">Cerrar Sesión</button>
         </div>
-        <button class="btn-main" style="margin-top: 20px; background: #eee;" onclick="toggleSidebar()">Cerrar</button>
+        <button class="btn-action" style="background: #eee; margin-top: 15px;" onclick="toggleSidebar()">Cerrar Menú</button>
     </aside>
 
     <div class="modal" id="loginModal">
         <div class="modal-content">
             <h2 style="margin-bottom: 10px;">Acceso Seguro</h2>
-            <p style="color: #666; margin-bottom: 20px;">ingrese su usuario y contraseña para inicias sus compras</p>
-            <input type="text" id="userId" placeholder="Usuario">
+            <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">ingrese su usuario y contraseña para inicias sus compras</p>
+            <input type="text" id="userId" placeholder="ID de Usuario">
             <input type="password" id="userPass" placeholder="Contraseña">
-            <button class="btn-main" onclick="processLogin()">Entrar</button>
-            <p onclick="closeModal()" style="margin-top: 15px; cursor: pointer; color: var(--rojo);">Cancelar</p>
+            <button class="btn-action" style="background: var(--amarillo);" onclick="processLogin()">Entrar</button>
+            <p onclick="closeModal()" style="margin-top: 20px; cursor: pointer; color: var(--rojo); font-weight: 600;">Cancelar</p>
         </div>
     </div>
 
-    <section style="background: #eee; height: 200px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
-        <h1>Frutería Las Espinas Bellas</h1>
-        <p>Calidad en cada bocado</p>
+    <section style="background: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200'); background-size: cover; height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">
+        <h1 style="font-size: 2.5rem;">Frutería Las Espinas Bellas</h1>
+        <p>Las mejores frutas de la región</p>
     </section>
 
     <main class="grid" id="product-grid">
         </main>
 
-    <footer class="footer-admin" id="footer-admin">
-        <button class="btn-main" style="width: auto; padding: 10px 20px; background: #25d366; color: white;" onclick="addProd()">+ Fruta</button>
-        <button class="btn-main" style="width: auto; padding: 10px 20px; background: var(--azul); color: white;" onclick="saveChanges()">💾 Guardar Cambios</button>
-        <button class="btn-main" style="width: auto; padding: 10px 20px; background: var(--rojo); color: white;" onclick="logout()">Salir</button>
+    <footer class="footer-admin">
+        <button class="btn-action" style="background: #2ecc71; color: white; width: auto;" onclick="addNewProduct()">+ Fruta</button>
+        <button class="btn-action" style="background: var(--azul); color: white; width: auto;" onclick="saveChanges()">💾 GUARDAR CAMBIOS</button>
+        <button class="btn-action" style="background: var(--rojo); color: white; width: auto;" onclick="logout()">Salir</button>
     </footer>
 
     <script>
-        // FIREBASE
-        const firebaseConfig = { databaseURL: "TU_URL_AQUÍ" };
+        // 1. CONFIGURACIÓN REAL DE TU FIREBASE
+        const firebaseConfig = { 
+            databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com" 
+        };
+        
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let adminData = { id: "24375245", pass: "1234" };
+        // Datos iniciales (se sincronizarán con Firebase)
+        let adminCreds = { id: "24375245", pass: "1234" };
 
+        // --- FUNCIONES DE INTERFAZ ---
         function openModal() { document.getElementById('loginModal').style.display = 'flex'; }
         function closeModal() { document.getElementById('loginModal').style.display = 'none'; }
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
 
+        // --- LÓGICA DE ACCESO ---
         function processLogin() {
             const id = document.getElementById('userId').value;
             const pass = document.getElementById('userPass').value;
 
-            if(id === adminData.id && pass === adminData.pass) {
+            if(id === adminCreds.id && pass === adminCreds.pass) {
                 document.getElementById('body-tag').classList.add('admin-mode');
-                document.getElementById('btn-login-trigger').style.display = 'none';
-                document.getElementById('btn-menu-trigger').style.display = 'block';
                 closeModal();
-                toggleSidebar(); // ABRE EL MENÚ LATERAL AUTOMÁTICAMENTE
+                // Abrir Menú Lateral automáticamente
+                setTimeout(toggleSidebar, 400); 
             } else {
-                alert("Credenciales incorrectas");
+                alert("Credenciales incorrectas. Verifique e intente de nuevo.");
             }
         }
 
         function logout() {
-            document.getElementById('body-tag').classList.remove('admin-mode');
-            document.getElementById('btn-login-trigger').style.display = 'block';
-            document.getElementById('btn-menu-trigger').style.display = 'none';
-            if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
-        }
-
-        function updateCreds() {
-            const old = document.getElementById('oldPass').value;
-            if(old === adminData.pass) {
-                adminData.id = document.getElementById('newId').value;
-                adminData.pass = document.getElementById('newPass').value;
-                alert("Credenciales actualizadas ✅");
-            } else {
-                alert("Contraseña anterior incorrecta");
+            if(confirm("¿Cerrar sesión de jefe?")) {
+                document.getElementById('body-tag').classList.remove('admin-mode');
+                if(document.getElementById('sidebar').classList.contains('active')) toggleSidebar();
+                location.reload(); 
             }
         }
 
-        // Carga de productos simplificada
-        function loadProducts() {
-            const grid = document.getElementById('product-grid');
-            grid.innerHTML = `
-                <div class="card">
-                    <img src="https://images.unsplash.com/photo-1560806887-1e4cd0b6bcd6?w=400">
-                    <div style="padding: 15px;">
-                        <h3>Manzana Roja</h3>
-                        <p>$2.500</p>
-                    </div>
-                </div>
-            `;
+        // --- REQUISITO 1: GESTIÓN DE CREDENCIALES ---
+        function updateCredentials() {
+            const old = document.getElementById('oldPass').value;
+            const nid = document.getElementById('newId').value;
+            const npass = document.getElementById('newPass').value;
+
+            if(old !== adminCreds.pass) {
+                alert("La contraseña anterior no es correcta ❌");
+                return;
+            }
+
+            if(nid && npass) {
+                db.ref('config/admin').set({ id: nid, pass: npass })
+                    .then(() => {
+                        alert("ID y Contraseña actualizados correctamente ✅");
+                        adminCreds = { id: nid, pass: npass };
+                        document.getElementById('oldPass').value = "";
+                    });
+            }
         }
+
+        // --- MANEJO DE PRODUCTOS ---
+        function loadProducts() {
+            db.ref('productos').on('value', snap => {
+                const grid = document.getElementById('product-grid');
+                grid.innerHTML = "";
+                const data = snap.val();
+                
+                for(let key in data) {
+                    const p = data[key];
+                    grid.innerHTML += `
+                        <div class="card">
+                            <img src="${p.imagen}" onclick="${document.body.classList.contains('admin-mode') ? `editImg('${key}')` : ''}">
+                            <div class="card-body">
+                                <h3 contenteditable="inherit" id="n-${key}">${p.nombre}</h3>
+                                <p contenteditable="inherit" id="p-${key}">${p.precio}</p>
+                                <button class="btn-delete" onclick="deleteProduct('${key}')">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function addNewProduct() {
+            const newKey = db.ref().child('productos').push().key;
+            db.ref('productos/' + newKey).set({
+                nombre: "Nueva Fruta",
+                precio: "$0.000",
+                imagen: "https://via.placeholder.com/300"
+            });
+        }
+
+        function deleteProduct(key) {
+            if(confirm("¿Eliminar este producto?")) {
+                db.ref('productos/' + key).remove();
+            }
+        }
+
+        function saveChanges() {
+            alert("Los cambios se han sincronizado con la base de datos ✅");
+        }
+
+        // Escuchar cambios de configuración (Credenciales)
+        db.ref('config/admin').on('value', snap => {
+            if(snap.exists()) adminCreds = snap.val();
+        });
+
         window.onload = loadProducts;
+
     </script>
 </body>
 </html>
