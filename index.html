@@ -34,14 +34,7 @@
             z-index: 1000;
         }
 
-        .nav-logo { 
-            font-family: 'Playfair Display', serif; 
-            color: var(--amarillo); 
-            font-size: 1.5rem; 
-            font-weight: 900; 
-            text-transform: uppercase;
-            outline: none;
-        }
+        .nav-logo { font-family: 'Playfair Display', serif; color: var(--amarillo); font-size: 1.5rem; font-weight: 900; text-transform: uppercase; outline: none; }
 
         header {
             background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200');
@@ -50,41 +43,33 @@
             border-bottom: 6px solid var(--amarillo);
         }
         
-        #store-name { 
-            font-family: 'Playfair Display', serif; 
-            font-size: 3.5rem; 
-            margin-top: 15px;
-            display: inline-block;
-            padding: 5px 15px;
-        }
+        #store-logo { width:140px; height:140px; border-radius:50%; border:4px solid var(--amarillo); object-fit:cover; background: white; cursor: pointer; transition: 0.3s; }
+        #store-logo:hover { transform: scale(1.05); filter: brightness(1.1); }
+        #store-name { font-family: 'Playfair Display', serif; font-size: 3.5rem; margin-top: 15px; outline: none; }
+        #store-slogan { outline: none; }
 
-        /* Mejora de visibilidad al editar texto blanco */
-        [contenteditable="true"]:focus {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 8px;
-            outline: none;
-        }
+        [contenteditable="true"]:focus { background: rgba(255, 255, 255, 0.2); border-radius: 8px; }
 
         .container { padding: 40px 8%; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
         .card { background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center; }
-        
+        .card img { width: 100%; height: 200px; object-fit: cover; cursor: pointer; }
+
         .sidebar { 
             position: fixed; top: 0; right: -100%; width: 340px; height: 100%; 
-            background: white; z-index: 5000; transition: 0.5s; padding: 40px 25px; 
+            background: white; z-index: 5000; transition: 0.5s; padding: 20px; 
             box-shadow: -10px 0 30px rgba(0,0,0,0.1); overflow-y: auto;
         }
         .sidebar.active { right: 0; }
+        
+        .close-sidebar { background: var(--verde); color: white; border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; cursor: pointer; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; border: none; }
         
         input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; }
         button { padding: 12px 25px; border: none; border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.3s; }
         .btn-y { background: var(--amarillo); color: var(--oscuro); }
         .btn-v { background: var(--verde-claro); color: white; width: 100%; }
 
-        .admin-footer { 
-            position: fixed; bottom: 0; left: 0; width: 100%; background: var(--oscuro); 
-            padding: 15px; display: none; justify-content: center; gap: 20px; z-index: 3000; 
-        }
+        .admin-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--oscuro); padding: 15px; display: none; justify-content: center; gap: 20px; z-index: 3000; }
         body.admin-mode .admin-footer { display: flex; }
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 4000; }
     </style>
@@ -100,8 +85,7 @@
     </nav>
 
     <header>
-        <img src="https://via.placeholder.com/150" id="store-logo" style="width:140px; height:140px; border-radius:50%; border:4px solid var(--amarillo); object-fit:cover; background: white;">
-        <br>
+        <img src="https://via.placeholder.com/150" id="store-logo" onclick="if(isBoss) editLogo()">
         <h1 id="store-name" contenteditable="false">Espinas Bellas</h1>
         <p id="store-slogan" contenteditable="false">Calidad y Frescura en tu hogar</p>
     </header>
@@ -111,40 +95,51 @@
     </section>
 
     <aside class="sidebar" id="sidebar">
+        <button class="close-sidebar" onclick="toggleSidebar()">←</button>
         <h2 id="sidebar-title">Menú Lateral</h2>
-        <p id="auth-status" style="margin: 10px 0; font-size: 0.9rem; color: #666;"></p>
         
         <div id="auth-container">
+            <p id="auth-status" style="margin: 10px 0; font-size: 0.9rem; color: #666;"></p>
             <div id="login-view">
                 <input type="email" id="login-email" placeholder="Correo electrónico">
                 <input type="password" id="login-pass" placeholder="Contraseña">
                 <button class="btn-v" onclick="signIn()">Ingresar</button>
-                <hr style="margin: 20px 0;">
-                <p style="text-align:center; font-size: 0.8rem;">¿No tienes cuenta?</p>
                 <button class="btn-y" style="width:100%; margin-top:10px;" onclick="switchAuth(true)">Crear Cuenta Nueva</button>
             </div>
 
             <div id="register-view" style="display:none;">
-                <input type="text" id="reg-name" placeholder="Nombre de Usuario completo">
+                <input type="text" id="reg-name" placeholder="Nombre completo">
                 <input type="email" id="reg-email" placeholder="Correo electrónico">
                 <input type="password" id="reg-pass" placeholder="Contraseña">
-                <button class="btn-v" style="background: var(--amarillo); color: black;" onclick="signUp()">Registrarme</button>
-                <button onclick="switchAuth(false)" style="background:none; color:grey; width:100%; margin-top:10px;">Volver al ingreso</button>
+                <button class="btn-v" style="background:var(--amarillo); color:black;" onclick="signUp()">Registrarme</button>
+                <button onclick="switchAuth(false)" style="background:none; color:grey; width:100%; margin-top:10px;">Volver</button>
             </div>
-
             <button id="logout-btn" class="btn-v" style="background:var(--rojo); display:none; margin-top:20px;" onclick="signOut()">Cerrar Sesión</button>
         </div>
 
         <div id="admin-settings-ui" style="display: none; border-top: 2px dashed #eee; margin-top: 20px; padding-top: 15px;">
-            <h3>⚙️ Configuración</h3>
-            <input type="text" id="edit-logo-url" placeholder="URL del Logo (Imagen)">
-            <button class="btn-v" onclick="saveLogo()">Actualizar Logo</button>
+            <h3 style="color:var(--verde); margin-bottom:10px;">⚙️ Ajustes de Dueño</h3>
+            
+            <label style="font-size:0.8rem; font-weight:bold;">Número de WhatsApp</label>
+            <input type="text" id="edit-wa" placeholder="Ej: 573212968875">
+            
+            <label style="font-size:0.8rem; font-weight:bold;">Nueva ID de Jefe</label>
+            <input type="text" id="edit-boss-id" placeholder="Nueva ID">
+            
+            <label style="font-size:0.8rem; font-weight:bold;">Nueva Contraseña</label>
+            <input type="password" id="edit-boss-pass" placeholder="Nueva clave">
+            
+            <div style="background: #fff3f3; padding: 15px; border-radius: 15px; margin-top: 15px; border: 1px solid #ffebeb;">
+                <label style="font-size:0.75rem; color: var(--rojo); font-weight: bold;">Validar con Clave Actual</label>
+                <input type="password" id="confirm-old-pass" placeholder="Clave actual para guardar">
+                <button class="btn-y" style="width: 100%;" onclick="updateAdminCreds()">Aplicar Cambios Jefe</button>
+            </div>
         </div>
     </aside>
 
     <div id="boss-modal" class="modal">
-        <div style="background:white; padding:30px; border-radius:20px; text-align:center;">
-            <h3>Acceso Administrativo</h3>
+        <div style="background:white; padding:30px; border-radius:20px; text-align:center; width:90%; max-width:350px;">
+            <h3>Panel de Control</h3>
             <input type="text" id="b-id" placeholder="ID de Jefe">
             <input type="password" id="b-pass" placeholder="Contraseña">
             <button class="btn-v" onclick="bossLogin()">Entrar</button>
@@ -154,8 +149,8 @@
 
     <footer class="admin-footer">
         <button class="btn-v" onclick="addProduct()" style="width:auto;">+ Añadir Fruta</button>
-        <button class="btn-y" onclick="saveChanges()">💾 GUARDAR TODO</button>
-        <button class="btn-v" style="background:var(--rojo); width:auto;" onclick="location.reload()">Salir Modo Jefe</button>
+        <button class="btn-y" onclick="saveChanges()">💾 GUARDAR CAMBIOS</button>
+        <button class="btn-v" style="background:var(--rojo); width:auto;" onclick="location.reload()">Cerrar Edición</button>
     </footer>
 
     <script>
@@ -181,38 +176,12 @@
         function closeBossModal() { document.getElementById('boss-modal').style.display = 'none'; }
         function handleBossButton() { isBoss ? toggleSidebar() : openBossModal(); }
 
-        // MANEJO DE VISTAS DE USUARIO
         function switchAuth(isRegister) {
             document.getElementById('login-view').style.display = isRegister ? 'none' : 'block';
             document.getElementById('register-view').style.display = isRegister ? 'block' : 'none';
         }
 
-        // REGISTRO CON 3 CAMPOS (NOMBRE, CORREO, CLAVE)
-        function signUp() {
-            const name = document.getElementById('reg-name').value;
-            const email = document.getElementById('reg-email').value;
-            const pass = document.getElementById('reg-pass').value;
-
-            if(!name || !email || !pass) return alert("Por favor llena los 3 campos");
-
-            auth.createUserWithEmailAndPassword(email, pass).then(res => {
-                // Guardar el nombre en el perfil de Firebase
-                return res.user.updateProfile({ displayName: name });
-            }).then(() => {
-                alert("Cuenta creada con éxito. ¡Bienvenido " + name + "!");
-                location.reload();
-            }).catch(e => alert("Error: " + e.message));
-        }
-
-        function signIn() {
-            const email = document.getElementById('login-email').value;
-            const pass = document.getElementById('login-pass').value;
-            auth.signInWithEmailAndPassword(email, pass).then(() => toggleSidebar()).catch(e => alert("Datos incorrectos"));
-        }
-
-        function signOut() { auth.signOut().then(() => location.reload()); }
-
-        // MODO JEFE
+        // --- MODO JEFE ---
         function bossLogin() {
             if(document.getElementById('b-id').value === bossCreds.id && document.getElementById('b-pass').value === bossCreds.pass) {
                 isBoss = true;
@@ -221,9 +190,40 @@
                 document.getElementById('nav-title').contentEditable = true;
                 document.getElementById('store-name').contentEditable = true;
                 document.getElementById('store-slogan').contentEditable = true;
+                document.getElementById('edit-wa').value = bossCreds.wa;
                 closeBossModal();
                 loadProducts();
+                toggleSidebar();
             } else { alert("Acceso denegado"); }
+        }
+
+        function updateAdminCreds() {
+            const oldConfirm = document.getElementById('confirm-old-pass').value;
+            if(oldConfirm !== bossCreds.pass) return alert("Contraseña actual incorrecta");
+
+            const newID = document.getElementById('edit-boss-id').value;
+            const newPass = document.getElementById('edit-boss-pass').value;
+            const newWA = document.getElementById('edit-wa').value;
+
+            if(newID) bossCreds.id = newID;
+            if(newPass) bossCreds.pass = newPass;
+            if(newWA) bossCreds.wa = newWA;
+
+            db.ref('config/admin').set(bossCreds).then(() => {
+                alert("Ajustes de jefe actualizados");
+                document.getElementById('confirm-old-pass').value = "";
+            });
+        }
+
+        // --- PRODUCTOS Y LOGO (EDICIÓN DIRECTA) ---
+        function editLogo() {
+            const newUrl = prompt("Pega la nueva URL para el logo de la tienda:", document.getElementById('store-logo').src);
+            if(newUrl) db.ref('config/logo').set(newUrl);
+        }
+
+        function editImg(k) {
+            const newImg = prompt("Pega la nueva URL de la imagen del producto:");
+            if(newImg) db.ref('productos/'+k+'/imagen').set(newImg);
         }
 
         function loadProducts() {
@@ -234,12 +234,12 @@
                     const p = child.val();
                     grid.innerHTML += `
                         <div class="card" data-key="${child.key}">
-                            <img src="${p.imagen}" style="width:100%; height:200px; object-fit:cover;">
+                            <img src="${p.imagen}" onclick="if(isBoss) editImg('${child.key}')">
                             <div style="padding:15px;">
                                 <h3 contenteditable="${isBoss}" class="e-n">${p.nombre}</h3>
                                 <p contenteditable="${isBoss}" class="e-p" style="color:var(--verde-claro); font-weight:800;">${p.precio}</p>
                                 <button class="btn-v" onclick="order('${p.nombre}')">Pedir por WhatsApp</button>
-                                ${isBoss ? `<p onclick="del('${child.key}')" style="color:red; cursor:pointer; margin-top:10px; font-size:0.8rem;">Eliminar</p>` : ''}
+                                ${isBoss ? `<p onclick="del('${child.key}')" style="color:red; cursor:pointer; margin-top:10px; font-size:0.8rem;">Eliminar 🗑️</p>` : ''}
                             </div>
                         </div>`;
                 });
@@ -251,44 +251,49 @@
             updates['config/nav_title'] = document.getElementById('nav-title').innerText;
             updates['config/name'] = document.getElementById('store-name').innerText;
             updates['config/slogan'] = document.getElementById('store-slogan').innerText;
-            
             document.querySelectorAll('.card').forEach(c => {
                 const k = c.getAttribute('data-key');
                 updates[`productos/${k}/nombre`] = c.querySelector('.e-n').innerText;
                 updates[`productos/${k}/precio`] = c.querySelector('.e-p').innerText;
             });
-            db.ref().update(updates).then(() => alert("¡Todo guardado en la nube!"));
+            db.ref().update(updates).then(() => alert("¡Cambios guardados con éxito!"));
         }
 
-        function saveLogo() {
-            const url = document.getElementById('edit-logo-url').value;
-            if(url) db.ref('config/logo').set(url).then(() => alert("Logo actualizado"));
+        // --- USUARIOS ---
+        function signUp() {
+            const n = document.getElementById('reg-name').value;
+            const e = document.getElementById('reg-email').value;
+            const p = document.getElementById('reg-pass').value;
+            if(!n || !e || !p) return alert("Llena todos los campos");
+            auth.createUserWithEmailAndPassword(e, p).then(res => {
+                res.user.updateProfile({ displayName: n }).then(() => location.reload());
+            }).catch(err => alert(err.message));
         }
+
+        function signIn() {
+            const e = document.getElementById('login-email').value;
+            const p = document.getElementById('login-pass').value;
+            auth.signInWithEmailAndPassword(e, p).then(() => toggleSidebar()).catch(() => alert("Error de ingreso"));
+        }
+
+        function signOut() { auth.signOut().then(() => location.reload()); }
 
         function order(item) {
-            const user = auth.currentUser;
-            const cliente = user ? (user.displayName || user.email) : "Cliente Nuevo";
-            window.open(`https://wa.me/${bossCreds.wa}?text=Hola, soy ${cliente}. Quiero pedir: ${item}`);
+            const u = auth.currentUser;
+            const cli = u ? (u.displayName || u.email) : "Cliente";
+            window.open(`https://wa.me/${bossCreds.wa}?text=Hola, soy ${cli}. Quiero pedir: ${item}`);
         }
 
-        function addProduct() { db.ref('productos').push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/300" }); }
-        function del(k) { if(confirm("¿Borrar fruta?")) db.ref('productos/'+k).remove(); }
-
-        // LISTENER DE DATOS Y USUARIO
         auth.onAuthStateChanged(user => {
             const status = document.getElementById('auth-status');
-            const loginView = document.getElementById('login-view');
-            const logoutBtn = document.getElementById('logout-btn');
-
             if(user) {
-                status.innerText = "Conectado como: " + (user.displayName || user.email);
-                loginView.style.display = 'none';
-                document.getElementById('register-view').style.display = 'none';
-                logoutBtn.style.display = 'block';
+                status.innerText = "Conectado: " + (user.displayName || user.email);
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'block';
             } else {
                 status.innerText = "Inicia sesión para pedir";
-                loginView.style.display = 'block';
-                logoutBtn.style.display = 'none';
+                document.getElementById('login-view').style.display = 'block';
+                document.getElementById('logout-btn').style.display = 'none';
             }
         });
 
@@ -298,12 +303,13 @@
                 if(c.nav_title) document.getElementById('nav-title').innerText = c.nav_title;
                 if(c.name) document.getElementById('store-name').innerText = c.name;
                 if(c.slogan) document.getElementById('store-slogan').innerText = c.slogan;
-                if(c.logo) {
-                    document.getElementById('store-logo').src = c.logo;
-                    document.getElementById('edit-logo-url').value = c.logo;
-                }
+                if(c.logo) document.getElementById('store-logo').src = c.logo;
+                if(c.admin) bossCreds = c.admin;
             }
         });
+
+        function addProduct() { db.ref('productos').push({ nombre: "Nueva Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/200" }); }
+        function del(k) { if(confirm("¿Borrar fruta?")) db.ref('productos/'+k).remove(); }
 
         window.onload = loadProducts;
     </script>
