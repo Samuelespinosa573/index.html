@@ -23,7 +23,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
         body { background-color: var(--crema); color: var(--oscuro); padding-bottom: 80px; }
 
-        /* --- NAVEGACIÓN --- */
         nav { 
             background: var(--verde); 
             padding: 15px 8%; 
@@ -34,47 +33,50 @@
             top: 0; 
             z-index: 1000;
         }
-        /* [MEJORA] Título de la izquierda editable */
+        /* Ajuste para edición de nombre en la esquina */
         .nav-logo { 
             font-family: 'Playfair Display', serif; 
             color: var(--amarillo); 
-            font-size: 1.3rem; 
+            font-size: 1.5rem; 
             font-weight: 900; 
             text-transform: uppercase;
             outline: none;
         }
 
-        /* --- HEADER --- */
         header {
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200');
+            background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200');
             background-size: cover; background-position: center;
             padding: 100px 20px; text-align: center; color: white;
+            border-bottom: 6px solid var(--amarillo);
         }
-        /* [MEJORA] Fondo oscuro al editar para ver las letras blancas */
-        #store-name[contenteditable="true"]:focus {
-            background: rgba(0,0,0,0.4);
-            color: var(--amarillo);
-            padding: 10px;
+        
+        /* Mejora visual para edición en el centro */
+        #store-name { 
+            font-family: 'Playfair Display', serif; 
+            font-size: 3.5rem; 
+            margin-top: 15px;
+            display: inline-block;
+            padding: 5px 15px;
+            transition: 0.3s;
+        }
+        .admin-mode #store-name:focus {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
             border-radius: 10px;
         }
-        #store-name { font-family: 'Playfair Display', serif; font-size: 3.5rem; }
 
-        /* --- PANEL LATERAL --- */
-        .sidebar { 
-            position: fixed; top: 0; right: -100%; width: 340px; height: 100%; 
-            background: white; z-index: 5000; transition: 0.5s; 
-            padding: 40px 25px; box-shadow: -10px 0 30px rgba(0,0,0,0.1); overflow-y: auto;
-        }
-        .sidebar.active { right: 0; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; }
-
-        /* --- GRID DE PRODUCTOS --- */
         .container { padding: 40px 8%; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
         .card { background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.05); text-align: center; }
-        .card img { width: 100%; height: 220px; object-fit: cover; }
         
-        /* BOTONES */
+        .sidebar { 
+            position: fixed; top: 0; right: -100%; width: 340px; height: 100%; 
+            background: white; z-index: 5000; transition: 0.5s; padding: 40px 25px; 
+            box-shadow: -10px 0 30px rgba(0,0,0,0.1); overflow-y: auto;
+        }
+        .sidebar.active { right: 0; }
+        
+        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; }
         button { padding: 12px 25px; border: none; border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.3s; }
         .btn-y { background: var(--amarillo); color: var(--oscuro); }
         .btn-v { background: var(--verde-claro); color: white; width: 100%; }
@@ -84,20 +86,21 @@
             padding: 15px; display: none; justify-content: center; gap: 20px; z-index: 3000; 
         }
         body.admin-mode .admin-footer { display: flex; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 4000; }
     </style>
 </head>
 <body id="main-body">
 
     <nav>
-        <div class="nav-logo" id="nav-title">Espinas Bellas</div>
+        <div class="nav-logo" id="nav-title" contenteditable="false">ESPINAS BELLAS</div>
         <div style="display:flex; gap:10px;">
             <button class="btn-y" onclick="toggleSidebar()">Mi Cuenta</button>
-            <button class="btn-y" style="background:white;" onclick="openBossModal()">Dueño</button>
+            <button class="btn-y" style="background:white;" onclick="handleBossButton()">Dueño</button>
         </div>
     </nav>
 
     <header>
-        <img src="https://via.placeholder.com/150" id="store-logo" style="width:140px; border-radius:50%; border:4px solid var(--amarillo);">
+        <img src="https://via.placeholder.com/150" id="store-logo" style="width:140px; height:140px; border-radius:50%; border:4px solid var(--amarillo); object-fit:cover;">
         <h1 id="store-name" contenteditable="false">Espinas Bellas</h1>
         <p id="store-slogan" contenteditable="false">Calidad y Frescura en tu hogar</p>
     </header>
@@ -107,56 +110,59 @@
     </section>
 
     <aside class="sidebar" id="sidebar">
-        <h2>Menú Lateral</h2>
+        <h2 id="sidebar-title">Menú Lateral</h2>
         
         <div id="auth-ui">
-            <p id="auth-status" style="margin-bottom:10px; font-weight:bold;"></p>
+            <p id="auth-status" style="margin-bottom:15px; font-weight:600; color:#666;"></p>
             
             <div id="auth-inputs">
-                <div id="signup-extra-fields" style="display: none;">
-                    <input type="text" id="reg-username" placeholder="Nombre de usuario">
+                <div id="reg-fields" style="display:none;">
+                    <input type="text" id="reg-user" placeholder="Nombre de usuario">
                 </div>
-                
                 <input type="email" id="email" placeholder="Correo electrónico">
                 <input type="password" id="pass" placeholder="Contraseña">
                 
-                <button class="btn-v" id="btn-login" onclick="authAction('login')">Ingresar</button>
-                <button class="btn-y" id="btn-toggle-reg" style="width:100%; margin-top:10px;" onclick="showRegistration()">Crear Cuenta</button>
-                <button class="btn-v" id="btn-signup" style="display:none; margin-top:10px;" onclick="authAction('signup')">Registrar Ahora</button>
+                <button class="btn-v" id="login-btn" onclick="authAction('login')">Ingresar</button>
+                <button class="btn-y" id="show-reg-btn" style="width:100%; margin-top:10px;" onclick="toggleRegView(true)">Crear Cuenta</button>
+                
+                <div id="reg-actions" style="display:none;">
+                    <button class="btn-v" style="background:var(--amarillo); color:black;" onclick="authAction('signup')">Registrarme Ahora</button>
+                    <button onclick="toggleRegView(false)" style="background:none; color:grey; width:100%; margin-top:10px;">Volver al ingreso</button>
+                </div>
             </div>
-            
             <button id="logout-btn" class="btn-v" style="background:var(--rojo); display:none; margin-top:20px;" onclick="signOut()">Cerrar Sesión</button>
         </div>
 
-        <div id="admin-settings-ui" style="display: none; border-top: 2px solid #eee; margin-top: 20px; padding-top: 20px;">
-            <h4 style="color:var(--verde)">Ajustes de Jefe</h4>
-            <label style="font-size: 0.8rem;">WhatsApp del negocio</label>
+        <div id="admin-settings-ui" style="display: none; border-top: 2px dashed #eee; margin-top: 20px;">
+            <h3 style="margin: 15px 0;">⚙️ Ajustes de Jefe</h3>
+            <label>WhatsApp</label>
             <input type="text" id="edit-wa">
-            <input type="password" id="confirm-old-pass" placeholder="Contraseña actual para validar">
-            <button class="btn-y" style="width:100%" onclick="updateAdminCreds()">Actualizar Datos</button>
+            <label>Nueva ID</label>
+            <input type="text" id="edit-boss-id">
+            <label>Nueva Clave</label>
+            <input type="password" id="edit-boss-pass">
+            <input type="password" id="confirm-old-pass" placeholder="Clave actual para guardar" style="border: 1px solid var(--rojo);">
+            <button class="btn-y" style="width:100%;" onclick="updateAdminCreds()">Guardar Credenciales</button>
         </div>
-
-        <button class="btn-y" style="width:100%; margin-top:30px; background:#eee;" onclick="toggleSidebar()">Cerrar</button>
     </aside>
 
-    <div id="boss-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:none; justify-content:center; align-items:center; z-index:9999;">
-        <div style="background:white; padding:30px; border-radius:20px; width:300px; text-align:center;">
-            <h3>Acceso Jefe</h3>
+    <div id="boss-modal" class="modal">
+        <div style="background:white; padding:30px; border-radius:20px; text-align:center;">
+            <h3>Panel de Control</h3>
             <input type="text" id="b-id" placeholder="ID de Jefe">
             <input type="password" id="b-pass" placeholder="Contraseña">
             <button class="btn-v" onclick="bossLogin()">Entrar</button>
-            <p onclick="document.getElementById('boss-modal').style.display='none'" style="color:red; cursor:pointer; margin-top:10px;">Cancelar</p>
+            <p onclick="closeBossModal()" style="color:red; cursor:pointer; margin-top:10px;">Cancelar</p>
         </div>
     </div>
 
-    <footer class="admin-footer" id="admin-menu">
-        <button class="btn-v" onclick="addProduct()" style="width:auto;">+ Fruta</button>
-        <button class="btn-y" onclick="saveChanges()" style="min-width:180px;">💾 GUARDAR TODO</button>
+    <footer class="admin-footer">
+        <button class="btn-v" onclick="addProduct()" style="width:auto;">+ Nueva Fruta</button>
+        <button class="btn-y" onclick="saveChanges()">💾 GUARDAR CAMBIOS</button>
         <button class="btn-v" style="background:var(--rojo); width:auto;" onclick="location.reload()">Salir</button>
     </footer>
 
     <script>
-        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyAOCuJ_tFSsKKqKXtgGvrrZgWDAPqt2uEk",
             authDomain: "fruteria-las-espinas.firebaseapp.com",
@@ -166,62 +172,71 @@
             messagingSenderId: "995826892241",
             appId: "1:995826892241:web:19fc6ba9096ecac7d7f4f0"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const auth = firebase.auth();
 
         let isBoss = false;
-        let bossCreds = { id: "24375245", pass: "1234", wa: "573212968875" };
+        let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
 
         function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
         function openBossModal() { document.getElementById('boss-modal').style.display = 'flex'; }
+        function closeBossModal() { document.getElementById('boss-modal').style.display = 'none'; }
+        function handleBossButton() { isBoss ? toggleSidebar() : openBossModal(); }
 
-        // [MEJORA] Mostrar campos de registro
-        function showRegistration() {
-            document.getElementById('signup-extra-fields').style.display = 'block';
-            document.getElementById('btn-signup').style.display = 'block';
-            document.getElementById('btn-login').style.display = 'none';
-            document.getElementById('btn-toggle-reg').style.display = 'none';
+        // Alternar vista de registro
+        function toggleRegView(show) {
+            document.getElementById('reg-fields').style.display = show ? 'block' : 'none';
+            document.getElementById('reg-actions').style.display = show ? 'block' : 'none';
+            document.getElementById('login-btn').style.display = show ? 'none' : 'block';
+            document.getElementById('show-reg-btn').style.display = show ? 'none' : 'block';
         }
 
-        // --- SISTEMA DE JEFE ---
+        function authAction(type) {
+            const email = document.getElementById('email').value;
+            const pass = document.getElementById('pass').value;
+            const user = document.getElementById('reg-user').value;
+
+            if(type === 'signup') {
+                if(!user) return alert("Escribe un nombre de usuario");
+                auth.createUserWithEmailAndPassword(email, pass).then(res => {
+                    res.user.updateProfile({ displayName: user });
+                    alert("Cuenta creada con éxito");
+                    location.reload();
+                }).catch(e => alert(e.message));
+            } else {
+                auth.signInWithEmailAndPassword(email, pass).then(() => toggleSidebar()).catch(e => alert("Error al ingresar"));
+            }
+        }
+
         function bossLogin() {
             if(document.getElementById('b-id').value === bossCreds.id && document.getElementById('b-pass').value === bossCreds.pass) {
                 isBoss = true;
                 document.body.classList.add('admin-mode');
                 document.getElementById('admin-settings-ui').style.display = 'block';
-                
                 // Habilitar edición de textos
                 document.getElementById('nav-title').contentEditable = true;
                 document.getElementById('store-name').contentEditable = true;
                 document.getElementById('store-slogan').contentEditable = true;
-                
-                document.getElementById('boss-modal').style.display = 'none';
+                document.getElementById('edit-wa').value = bossCreds.wa;
+                closeBossModal();
                 loadProducts();
-                alert("Modo Jefe Activado");
-            } else { alert("Error de acceso"); }
+            } else { alert("Datos incorrectos"); }
         }
 
-        // [MEJORA] Registro con 3 datos (Nombre, Correo, Clave)
-        function authAction(type) {
-            const email = document.getElementById('email').value;
-            const pass = document.getElementById('pass').value;
-            const username = document.getElementById('reg-username').value;
-
-            if (type === 'signup') {
-                if(!username) return alert("Ingresa un nombre de usuario");
-                auth.createUserWithEmailAndPassword(email, pass).then((res) => {
-                    // Guardar el nombre de usuario en la DB
-                    db.ref('users/' + res.user.uid).set({ username: username });
-                    alert("¡Cuenta creada, " + username + "!");
-                    location.reload();
-                }).catch(err => alert(err.message));
-            } else {
-                auth.signInWithEmailAndPassword(email, pass).then(() => toggleSidebar()).catch(err => alert("Error"));
-            }
+        function updateAdminCreds() {
+            const cp = document.getElementById('confirm-old-pass').value;
+            if(cp !== bossCreds.pass) return alert("Clave actual incorrecta");
+            
+            const up = {
+                id: document.getElementById('edit-boss-id').value || bossCreds.id,
+                pass: document.getElementById('edit-boss-pass').value || bossCreds.pass,
+                wa: document.getElementById('edit-wa').value || bossCreds.wa
+            };
+            db.ref('config/admin').set(up).then(() => alert("Credenciales actualizadas"));
         }
 
-        // --- PRODUCTOS ---
         function loadProducts() {
             db.ref('productos').on('value', snap => {
                 const grid = document.getElementById('product-grid');
@@ -229,44 +244,61 @@
                 snap.forEach(child => {
                     const p = child.val();
                     grid.innerHTML += `
-                        <div class="card">
-                            <img src="${p.imagen}">
+                        <div class="card" data-key="${child.key}">
+                            <img src="${p.imagen}" style="width:100%; height:200px; object-fit:cover;">
                             <div style="padding:15px;">
                                 <h3 contenteditable="${isBoss}" class="e-n">${p.nombre}</h3>
                                 <p contenteditable="${isBoss}" class="e-p" style="color:var(--verde-claro); font-weight:800;">${p.precio}</p>
-                                <button class="btn-v" onclick="order('${p.nombre}')">WhatsApp</button>
-                                ${isBoss ? `<p onclick="delProduct('${child.key}')" style="color:red; cursor:pointer; margin-top:5px;">Eliminar</p>` : ''}
+                                <button class="btn-v" onclick="order('${p.nombre}')">Pedir por WhatsApp</button>
+                                ${isBoss ? `<p onclick="del('${child.key}')" style="color:red; cursor:pointer; margin-top:10px;">Eliminar</p>` : ''}
                             </div>
                         </div>`;
                 });
             });
         }
 
-        // [MEJORA] Guardar título de navegación y textos centrales
         function saveChanges() {
             const updates = {};
-            updates['config/navTitle'] = document.getElementById('nav-title').innerText;
             updates['config/name'] = document.getElementById('store-name').innerText;
+            updates['config/nav_title'] = document.getElementById('nav-title').innerText;
             updates['config/slogan'] = document.getElementById('store-slogan').innerText;
             
-            db.ref().update(updates).then(() => alert("Cambios guardados con éxito"));
+            document.querySelectorAll('.card').forEach(c => {
+                const k = c.getAttribute('data-key');
+                updates[`productos/${k}/nombre`] = c.querySelector('.e-n').innerText;
+                updates[`productos/${k}/precio`] = c.querySelector('.e-p').innerText;
+            });
+            db.ref().update(updates).then(() => alert("Cambios guardados"));
         }
 
         function order(item) {
-            const user = auth.currentUser;
-            if(!user) return alert("Inicia sesión para comprar");
-            window.open(`https://wa.me/${bossCreds.wa}?text=Hola, quiero pedir: ${item}`);
+            const u = auth.currentUser;
+            const name = u ? (u.displayName || u.email) : "Cliente";
+            window.open(`https://wa.me/${bossCreds.wa}?text=Hola, soy ${name}. Quiero pedir: ${item}`);
         }
 
+        function addProduct() { db.ref('productos').push({ nombre: "Fruta", precio: "$0.00", imagen: "https://via.placeholder.com/300" }); }
+        function del(k) { if(confirm("¿Borrar?")) db.ref('productos/'+k).remove(); }
         function signOut() { auth.signOut().then(() => location.reload()); }
 
-        // Sincronizar datos iniciales
+        auth.onAuthStateChanged(user => {
+            const status = document.getElementById('auth-status');
+            if(user) {
+                status.innerText = "Bienvenido, " + (user.displayName || user.email);
+                document.getElementById('auth-inputs').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'block';
+            } else {
+                status.innerText = "Inicia sesión para pedir";
+            }
+        });
+
         db.ref('config').on('value', snap => {
             const c = snap.val();
             if(c) {
-                if(c.navTitle) document.getElementById('nav-title').innerText = c.navTitle;
                 if(c.name) document.getElementById('store-name').innerText = c.name;
+                if(c.nav_title) document.getElementById('nav-title').innerText = c.nav_title;
                 if(c.slogan) document.getElementById('store-slogan').innerText = c.slogan;
+                if(c.admin) bossCreds = c.admin;
             }
         });
 
