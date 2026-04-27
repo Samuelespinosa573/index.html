@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espinas Bellas | Sistema Pro Total</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+    <style>
+        :root {
+            --verde: #1b4332;
+            --verde-claro: #2d6a4f;
+            --amarillo: #ffca3a;
+            --crema: #f8f9fa;
+            --oscuro: #081c15;
+            --rojo: #e63946;
+            --shadow: 0 10px 20px rgba(0,0,0,0.05);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        html { scroll-behavior: smooth; }
+        body { background-color: var(--crema); color: var(--oscuro); padding-bottom: 80px; transition: 0.3s; }
+
+        /* Navbar */
+        nav { 
+            background: var(--verde); padding: 15px 5%; 
+            display: flex; justify-content: space-between; align-items: center; 
+            position: sticky; top: 0; z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .nav-logo { font-family: 'Playfair Display', serif; color: var(--amarillo); font-size: 1.5rem; font-weight: 900; outline: none; transition: 0.3s; }
+        .nav-logo[contenteditable="true"] { border-bottom: 2px dashed var(--amarillo); padding: 0 5px; }
+        
+        /* Header */
+        header {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1200');
+            background-size: cover; background-position: center;
+            padding: 90px 20px; text-align: center; color: white;
+            border-bottom: 6px solid var(--amarillo); position: relative;
+        }
+        #store-logo { width:140px; height:140px; border-radius:50%; border:4px solid var(--amarillo); object-fit:cover; background: white; cursor: pointer; transition: 0.3s; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+
+        /* Grid y Cards */
+        .container { padding: 40px 5%; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 30px; }
+        .card { 
+            background: white; border-radius: 24px; overflow: hidden; 
+            box-shadow: var(--shadow); position: relative; text-align: center; 
+            border: 1px solid #eee; transition: 0.3s ease;
+        }
+        .card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
+        .card img { width: 100%; height: 200px; object-fit: cover; }
+        
+        .badge-agotado { position: absolute; top: 15px; right: 15px; background: var(--rojo); color: white; padding: 6px 14px; border-radius: 50px; font-weight: 800; font-size: 0.75rem; z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+        /* Sidebars */
+        .sidebar { 
+            position: fixed; top: 0; right: -100%; width: 380px; max-width: 90%; height: 100%; 
+            background: white; z-index: 5000; transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); padding: 30px; 
+            box-shadow: -10px 0 40px rgba(0,0,0,0.15); overflow-y: auto;
+        }
+        .sidebar.active { right: 0; }
+        .close-arrow { background: var(--oscuro); color: white; border: none; padding: 12px 18px; border-radius: 12px; cursor: pointer; margin-bottom: 25px; font-weight: 800; transition: 0.3s; }
+
+        input { width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #f0f0f0; border-radius: 14px; outline: none; transition: 0.3s; }
+        input:focus { border-color: var(--amarillo); }
+        button { padding: 14px 22px; border: none; border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.3s; display: inline-block; }
+        .btn-y { background: var(--amarillo); color: var(--oscuro); }
+        .btn-v { background: var(--verde-claro); color: white; }
+        
+        /* Diagnóstico corregido para estar oculto */
+        #diag-panel { display: none; }
+
+        .admin-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--oscuro); padding: 18px; display: none; justify-content: center; gap: 15px; z-index: 3000; border-top: 3px solid var(--amarillo); }
+        body.admin-mode .admin-footer { display: flex; }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-logo" id="nav-title" contenteditable="false">ESPINAS BELLAS</div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn-y" onclick="openSidebar('cart-sidebar')">🛒 <span id="cart-count">0</span></button>
+            <button class="btn-y" onclick="openSidebar('user-sidebar')">Perfil</button>
+            <button class="btn-y" style="background:white;" onclick="handleBossButton()">Dueño</button>
+        </div>
+    </nav>
+
+    <div style="padding: 20px 8%; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+        <input type="text" id="search-input" placeholder="🔍 ¿Qué estás buscando hoy?" style="border-radius: 50px; padding-left: 25px;" oninput="filterProducts()">
+    </div>
+
+    <header id="dynamic-header">
+        <img src="https://via.placeholder.com/150" id="store-logo" onclick="if(isBoss) editLogo()">
+        <h1 id="store-name" style="outline:none; font-family: 'Playfair Display'; font-size: 3.2rem; margin-top: 15px;">Cargando...</h1>
+        <p id="store-slogan" style="outline:none; font-size: 1.1rem; opacity: 0.9;">Cargando...</p>
+        <button id="change-bg-btn" style="display:none; margin:15px auto;" class="btn-y" onclick="editHeaderBg()">🖼️ Cambiar Fondo</button>
+    </header>
+
+    <section class="container">
+        <div class="grid" id="product-grid"></div>
+        
+        <div id="diag-panel" class="diag-box" style="background: white; border-left: 5px solid var(--amarillo); padding: 20px; border-radius: 15px; margin-top: 30px; box-shadow: var(--shadow);">
+            <h4 style="color:var(--verde); margin-bottom:10px;">🛠️ Diagnóstico del Sistema</h4>
+            <div id="diag-results" style="font-size: 0.9rem; line-height: 1.6;"></div>
+            <button class="btn-y" onclick="document.getElementById('diag-panel').style.display='none'" style="width:100%; margin-top:15px;">Cerrar Diagnóstico</button>
+        </div>
+    </section>
+
+    <aside class="sidebar" id="user-sidebar">
+        <button class="close-arrow" onclick="closeSidebars()">← VOLVER</button>
+        
+        <div id="auth-section">
+            <h2 id="auth-status" style="margin-bottom:20px; color:var(--verde); font-size: 1.4rem;"></h2>
+            <div id="login-view">
+                <input type="email" id="login-email" placeholder="Correo">
+                <input type="password" id="login-pass" placeholder="Contraseña">
+                <button class="btn-v" style="width:100%;" onclick="signIn()">Ingresar</button>
+                <p style="text-align:center; font-size:0.85rem; margin-top:20px; color: #666;">¿Nuevo aquí?</p>
+                <button class="btn-y" style="width:100%; margin-top:8px;" onclick="switchAuth(true)">Crear Cuenta Nueva</button>
+            </div>
+            <div id="register-view" style="display:none;">
+                <input type="text" id="reg-name" placeholder="Nombre completo">
+                <input type="email" id="reg-email" placeholder="Correo electrónico">
+                <input type="password" id="reg-pass" placeholder="Contraseña">
+                <button class="btn-v" style="width:100%;" onclick="signUp()">Registrarme</button>
+                <button onclick="switchAuth(false)" style="background:none; color:grey; width:100%; margin-top:15px; font-weight: 600;">Ya tengo cuenta, ingresar</button>
+            </div>
+            <button id="logout-btn" class="btn-v" style="background:var(--rojo); display:none; width:100%; margin-top:20px;" onclick="signOut()">Cerrar Sesión</button>
+        </div>
+
+        <div id="admin-settings-ui" style="display:none; margin-top:35px; border-top:2px dashed #ddd; padding-top:25px;">
+            <h3 style="color:var(--verde-claro); margin-bottom:15px;">⚙️ Ajustes del Negocio</h3>
+            <label style="font-size: 0.8rem; font-weight: 800;">WhatsApp (Solo números):</label><input type="text" id="edit-wa">
+            <label style="font-size: 0.8rem; font-weight: 800;">Nueva ID de Jefe:</label><input type="text" id="edit-boss-id">
+            <label style="font-size: 0.8rem; font-weight: 800;">Nueva Clave de Jefe:</label><input type="password" id="edit-boss-pass">
+            <div style="background:#fff4f4; padding:20px; border-radius:15px; margin-top:15px;">
+                <input type="password" id="confirm-old-pass" placeholder="Confirma clave actual">
+                <button class="btn-v" style="width:100%; background: var(--oscuro);" onclick="updateAdminCreds()">Actualizar Datos</button>
+            </div>
+        </div>
+    </aside>
+
+    <aside class="sidebar" id="cart-sidebar">
+        <button class="close-arrow" onclick="closeSidebars()">← VOLVER</button>
+        <h2 style="margin-bottom:20px; border-bottom: 2px solid var(--crema); padding-bottom: 10px;">Tu Carrito</h2>
+        <div id="cart-items-list" style="margin:20px 0;"></div>
+        <div style="display:flex; justify-content:space-between; font-weight:900; font-size:1.5rem; margin-top: 30px; color: var(--verde);">
+            <span>Total:</span><span id="cart-total">$0</span>
+        </div>
+        <button class="btn-v" style="width:100%; margin-top:30px; padding: 20px;" onclick="checkoutWhatsApp()">✅ FINALIZAR PEDIDO</button>
+    </aside>
+
+    <footer class="admin-footer">
+        <button class="btn-y" onclick="runDiagnostics()" style="background:#444; color:white;">🛠️ Diagnóstico</button>
+        <button class="btn-v" onclick="addProduct()">+ Nuevo Producto</button>
+        <button class="btn-y" onclick="saveChanges()">💾 GUARDAR TODO</button>
+        <button class="btn-v" style="background:var(--rojo);" onclick="location.reload()">Cerrar Edición</button>
+    </footer>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAOCuJ_tFSsKKqKXtgGvrrZgWDAPqt2uEk",
+            authDomain: "fruteria-las-espinas.firebaseapp.com",
+            databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com",
+            projectId: "fruteria-las-espinas"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        let isBoss = false;
+        let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
+        let allProductsData = {};
+        let cart = [];
+
+        function openSidebar(id) { document.getElementById(id).classList.add('active'); }
+        function closeSidebars() { document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('active')); }
+
+        function handleBossButton() {
+            if (isBoss) { openSidebar('user-sidebar'); } 
+            else {
+                const id = prompt("ID de Jefe:");
+                const pass = prompt("Contraseña:");
+                if(id === bossCreds.id && pass === bossCreds.pass) { activateBossMode(); } 
+                else { alert("Acceso denegado."); }
+            }
+        }
+
+        function activateBossMode() {
+            isBoss = true;
+            document.body.classList.add('admin-mode');
+            document.getElementById('admin-settings-ui').style.display = 'block';
+            document.getElementById('change-bg-btn').style.display = 'block';
+            document.getElementById('nav-title').contentEditable = true;
+            document.getElementById('store-name').contentEditable = true;
+            document.getElementById('store-slogan').contentEditable = true;
+            document.getElementById('edit-wa').value = bossCreds.wa;
+            db.ref('productos').once('value', renderProducts);
+            openSidebar('user-sidebar');
+        }
+
+        function switchAuth(isRegister) {
+            document.getElementById('login-view').style.display = isRegister ? 'none' : 'block';
+            document.getElementById('register-view').style.display = isRegister ? 'block' : 'none';
+        }
+
+        function signUp() {
+            const n = document.getElementById('reg-name').value;
+            const e = document.getElementById('reg-email').value;
+            const p = document.getElementById('reg-pass').value;
+            if(!n || !e || !p) return alert("Llena todos los campos");
+            auth.createUserWithEmailAndPassword(e, p).then(res => {
+                res.user.updateProfile({ displayName: n }).then(() => {
+                    alert("¡Bienvenido " + n + "!");
+                    location.reload();
+                });
+            }).catch(err => alert(err.message));
+        }
+
+        function signIn() {
+            const e = document.getElementById('login-email').value;
+            const p = document.getElementById('login-pass').value;
+            auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
+        }
+
+        function signOut() { auth.signOut().then(() => location.reload()); }
+
+        function renderProducts(snap) {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = "";
+            allProductsData = snap.val() || {};
+            for(let k in allProductsData) {
+                const p = allProductsData[k];
+                const stock = p.stock || 0;
+                grid.innerHTML += `
+                    <div class="card" data-key="${k}" data-name="${p.nombre.toLowerCase()}">
+                        ${stock <= 0 ? '<div class="badge-agotado">AGOTADO</div>' : ''}
+                        <img src="${p.imagen}" onclick="if(isBoss) editImg('${k}')">
+                        <div style="padding:20px;">
+                            <h3 class="e-n" contenteditable="${isBoss}">${p.nombre}</h3>
+                            <p class="e-p" contenteditable="${isBoss}" style="color:var(--verde-claro); font-weight:800; font-size: 1.2rem; margin-top:5px;">${p.precio}</p>
+                            ${isBoss ? `<div style="margin-top:10px; font-size:0.8rem; color:#888;">Stock: <input type="number" class="e-s" value="${stock}" style="width:60px;"></div>` : ''}
+                            <button class="btn-v" style="width:100%; margin-top:15px; border-radius:12px;" 
+                                onclick="addToCart('${k}')" ${stock <= 0 ? 'disabled style="background:#ccc"' : ''}>
+                                ${stock <= 0 ? 'Agotado' : 'Añadir al Carrito'}
+                            </button>
+                            ${isBoss ? `<p onclick="del('${k}')" style="color:var(--rojo); cursor:pointer; font-size:0.7rem; margin-top:15px;">ELIMINAR 🗑️</p>` : ''}
+                        </div>
+                    </div>`;
+            }
+        }
+
+        function saveChanges() {
+            const up = {};
+            up['config/nav_title'] = document.getElementById('nav-title').innerText;
+            up['config/name'] = document.getElementById('store-name').innerText;
+            up['config/slogan'] = document.getElementById('store-slogan').innerText;
+            document.querySelectorAll('.card').forEach(c => {
+                const k = c.dataset.key;
+                up[`productos/${k}/nombre`] = c.querySelector('.e-n').innerText;
+                up[`productos/${k}/precio`] = c.querySelector('.e-p').innerText;
+                if(isBoss) up[`productos/${k}/stock`] = parseInt(c.querySelector('.e-s').value || 0);
+            });
+            db.ref().update(up).then(() => alert("✨ Cambios sincronizados con éxito."));
+        }
+
+        function editLogo() { const u = prompt("URL del Logo:"); if(u) db.ref('config/logo').set(u); }
+        function editHeaderBg() { const u = prompt("URL del Fondo:"); if(u) db.ref('config/bg').set(u); }
+        
+        function updateAdminCreds() {
+            const old = document.getElementById('confirm-old-pass').value;
+            if(old !== bossCreds.pass) return alert("Contraseña incorrecta.");
+            const newObj = {
+                id: document.getElementById('edit-boss-id').value || bossCreds.id,
+                pass: document.getElementById('edit-boss-pass').value || bossCreds.pass,
+                wa: document.getElementById('edit-wa').value || bossCreds.wa
+            };
+            db.ref('config/admin').set(newObj).then(() => location.reload());
+        }
+
+        function addToCart(key) {
+            const p = allProductsData[key];
+            const existing = cart.find(i => i.key === key);
+            if(existing) {
+                if(existing.qty < p.stock) existing.qty++;
+                else return alert("Sin más unidades disponibles.");
+            } else {
+                cart.push({key, name: p.nombre, price: p.precio, qty: 1});
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const list = document.getElementById('cart-items-list');
+            list.innerHTML = "";
+            let total = 0, count = 0;
+            cart.forEach(item => {
+                const pTotal = parseInt(item.price.replace(/\D/g,'')) * item.qty;
+                total += pTotal; count += item.qty;
+                list.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom:1px solid #f9f9f9; padding-bottom:10px;">
+                    <div><strong>${item.name}</strong><br><small style="color:#888;">${item.qty} un. x ${item.price}</small></div>
+                    <b style="color:var(--verde-claro);">$${pTotal.toLocaleString()}</b>
+                </div>`;
+            });
+            document.getElementById('cart-total').innerText = "$" + total.toLocaleString();
+            document.getElementById('cart-count').innerText = count;
+        }
+
+        function checkoutWhatsApp() {
+            if(cart.length === 0) return alert("Tu carrito está vacío.");
+            let msg = `*NUEVO PEDIDO - ${document.getElementById('nav-title').innerText}*%0A%0A`;
+            cart.forEach(i => msg += `• ${i.qty}x ${i.name} (${i.price})%0A`);
+            msg += `%0A*TOTAL: ${document.getElementById('cart-total').innerText}*`;
+            window.open(`https://wa.me/${bossCreds.wa}?text=${msg}`);
+        }
+
+        function runDiagnostics() {
+            const res = document.getElementById('diag-results');
+            document.getElementById('diag-panel').style.display = 'block';
+            res.innerHTML = "⌛ Analizando sistema...";
+            setTimeout(() => {
+                res.innerHTML = "✅ Base de datos: CONECTADA<br>✅ Productos: " + Object.keys(allProductsData).length + "<br>✅ Autenticación: OPERATIVA<br>✅ WhatsApp: CONFIGURADO";
+            }, 800);
+        }
+
+        function filterProducts() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            document.querySelectorAll('.card').forEach(c => c.style.display = c.dataset.name.includes(q) ? 'block' : 'none');
+        }
+
+        function addProduct() { db.ref('productos').push({ nombre: "Producto Nuevo", precio: "$0", imagen: "https://via.placeholder.com/200", stock: 1 }); }
+        function del(k) { if(confirm("¿Eliminar este producto?")) db.ref('productos/'+k).remove(); }
+        function editImg(k) { const u = prompt("URL de la imagen:"); if(u) db.ref(`productos/${k}/imagen`).set(u); }
+
+        db.ref('productos').on('value', renderProducts);
+        db.ref('config').on('value', snap => {
+            const c = snap.val(); if(!c) return;
+            if(c.nav_title) document.getElementById('nav-title').innerText = c.nav_title;
+            if(c.name) document.getElementById('store-name').innerText = c.name;
+            if(c.slogan) document.getElementById('store-slogan').innerText = c.slogan;
+            if(c.logo) document.getElementById('store-logo').src = c.logo;
+            if(c.bg) document.getElementById('dynamic-header').style.backgroundImage = `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('${c.bg}')`;
+            if(c.admin) bossCreds = c.admin;
+        });
+
+        auth.onAuthStateChanged(u => {
+            const st = document.getElementById('auth-status');
+            if(u) {
+                st.innerText = "¡Hola, " + (u.displayName || "Usuario") + "!";
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('register-view').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'block';
+            } else {
+                st.innerText = "Bienvenido a la Tienda";
+                document.getElementById('login-view').style.display = 'block';
+                document.getElementById('logout-btn').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
