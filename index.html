@@ -87,7 +87,7 @@
         .btn-v { background: var(--verde-claro); color: white; box-shadow: 0 4px 15px rgba(45, 106, 79, 0.2); }
         .btn-v:hover { background: var(--verde); transform: scale(1.05); }
 
-        /* Sidebars Glassmorphism */
+        /* Sidebars Glassmorphism y Mejoras de Inputs */
         .sidebar { 
             position: fixed; top: 0; right: -100%; width: 380px; max-width: 95%; height: 100%; 
             background: var(--glass); backdrop-filter: blur(15px); z-index: 5000; 
@@ -96,6 +96,20 @@
         }
         .sidebar.active { right: 0; }
         
+        /* NUEVO: Estilos unificados y limpios para todos los inputs de la barra lateral */
+        .sidebar input {
+            width: 100%;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: var(--transition);
+        }
+        .sidebar input:focus { border-color: var(--verde); box-shadow: 0 0 8px rgba(27, 67, 50, 0.2); }
+        .sidebar label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; color: var(--oscuro); }
+
         /* Footer Admin */
         .admin-footer { 
             position: fixed; bottom: 0; left: 0; width: 100%; background: var(--oscuro); 
@@ -120,7 +134,7 @@
         <div style="display:flex; gap:12px;">
             <button class="btn-y" onclick="openSidebar('cart-sidebar')">🛒 <span id="cart-count">0</span></button>
             <button class="btn-y" onclick="openSidebar('user-sidebar')">👤 Perfil</button>
-            <button class="btn-y" style="background:white;" onclick="handleBossButton()">🛠️</button>
+            <!-- El botón de herramientas (🛠️) ha sido eliminado para mantenerlo oculto -->
         </div>
     </nav>
 
@@ -147,39 +161,60 @@
         </div>
     </section>
 
+    <!-- Sidebar de Perfil y Admin Oculto -->
     <aside class="sidebar" id="user-sidebar">
         <button class="btn-y" onclick="closeSidebars()" style="margin-bottom:30px;">← Volver</button>
+        
         <div id="auth-section">
             <h2 id="auth-status" style="margin-bottom:20px;">Inicia Sesión</h2>
+            
             <div id="login-view">
-                <input type="email" id="login-email" placeholder="Correo Electrónico">
+                <input type="email" id="login-email" placeholder="Correo Electrónico o ID">
                 <input type="password" id="login-pass" placeholder="Contraseña">
-                <button class="btn-v" style="width:100%; margin-top:15px;" onclick="signIn()">Entrar al Sistema</button>
+                <button class="btn-v" style="width:100%; margin-top:5px;" onclick="signIn()">Entrar al Sistema</button>
                 <button class="btn-y" style="width:100%; margin-top:10px;" onclick="switchAuth(true)">Crear cuenta nueva</button>
             </div>
+            
             <div id="register-view" style="display:none;">
                 <input type="text" id="reg-name" placeholder="Nombre completo">
                 <input type="email" id="reg-email" placeholder="Correo">
                 <input type="password" id="reg-pass" placeholder="Contraseña">
                 <button class="btn-v" style="width:100%;" onclick="signUp()">Registrarme</button>
-                <button onclick="switchAuth(false)" style="background:none; color:var(--verde); width:100%; margin-top:10px; font-size:0.85rem;">Ya tengo una cuenta registrada</button>
+                <button onclick="switchAuth(false)" style="background:none; color:var(--verde); width:100%; margin-top:10px; font-size:0.85rem; font-weight: bold; border:none; cursor:pointer;">Ya tengo una cuenta registrada</button>
             </div>
+            
             <button id="logout-btn" class="btn-v" style="background:var(--rojo); display:none; width:100%; margin-top:20px;" onclick="signOut()">Cerrar Mi Sesión</button>
         </div>
 
-        <div id="admin-settings-ui" style="display:none; margin-top:40px; border-top:2px solid #eee; padding-top:25px;">
-            <h3 style="color:var(--verde); margin-bottom:15px;">Ajustes de Administrador</h3>
-            <label style="font-size: 0.8rem; font-weight: 700;">WhatsApp (con código de país):</label>
-            <input type="text" id="edit-wa" placeholder="Ej: 57321...">
-            <label style="font-size: 0.8rem; font-weight: 700;">Nueva ID de Acceso:</label>
-            <input type="text" id="edit-boss-id">
-            <label style="font-size: 0.8rem; font-weight: 700;">Nueva Clave de Acceso:</label>
-            <input type="password" id="edit-boss-pass">
-            <input type="password" id="confirm-old-pass" placeholder="Confirma clave actual para guardar" style="border-color: var(--amarillo);">
-            <button class="btn-v" style="width:100%; background:var(--oscuro);" onclick="updateAdminCreds()">Aplicar Cambios</button>
+        <!-- Panel de Administrador Mejorado Visualmente -->
+        <div id="admin-settings-ui" style="display:none; margin-top:30px; border-top:2px solid #ddd; padding-top:25px;">
+            <h3 style="color:var(--verde); margin-bottom:20px; font-size: 1.4rem;">⚙️ Panel de Control</h3>
+            
+            <div>
+                <label>WhatsApp (con código de país):</label>
+                <input type="text" id="edit-wa" placeholder="Ej: 57321...">
+            </div>
+            
+            <div>
+                <label>Nueva ID / Correo de Acceso:</label>
+                <input type="text" id="edit-boss-id">
+            </div>
+            
+            <div>
+                <label>Nueva Clave de Acceso:</label>
+                <input type="password" id="edit-boss-pass">
+            </div>
+            
+            <div style="margin-top: 10px;">
+                <label style="color: var(--rojo);">Confirma clave actual para guardar:</label>
+                <input type="password" id="confirm-old-pass" placeholder="Clave actual" style="border: 2px solid var(--amarillo);">
+            </div>
+            
+            <button class="btn-v" style="width:100%; background:var(--oscuro); margin-top: 10px;" onclick="updateAdminCreds()">Aplicar Cambios</button>
         </div>
     </aside>
 
+    <!-- Sidebar de Carrito -->
     <aside class="sidebar" id="cart-sidebar">
         <button class="btn-y" onclick="closeSidebars()">← Volver</button>
         <h2 style="margin:25px 0 15px;">Tu Pedido Actual</h2>
@@ -218,28 +253,18 @@
         function openSidebar(id) { document.getElementById(id).classList.add('active'); }
         function closeSidebars() { document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('active')); }
 
-        // Gestión Modo Jefe
-        function handleBossButton() {
-            if (isBoss) { openSidebar('user-sidebar'); }
-            else {
-                const id = prompt("Ingrese ID de Administrador:");
-                const pass = prompt("Ingrese Clave:");
-                if(id === bossCreds.id && pass === bossCreds.pass) {
-                    isBoss = true;
-                    document.body.classList.add('admin-mode');
-                    document.getElementById('admin-settings-ui').style.display = 'block';
-                    ["nav-title", "store-name", "store-slogan"].forEach(id => document.getElementById(id).contentEditable = true);
-                    renderProducts();
-                    alert("Modo Edición Activado");
-                } else { alert("Acceso Denegado"); }
-            }
-        }
-
+        // Función para salir del Modo Jefe
         function exitBossMode() {
             isBoss = false;
             document.body.classList.remove('admin-mode');
             document.getElementById('admin-settings-ui').style.display = 'none';
             ["nav-title", "store-name", "store-slogan"].forEach(id => document.getElementById(id).contentEditable = false);
+            
+            // Restaurar la vista de inicio de sesión
+            document.getElementById('auth-status').innerText = "Inicia Sesión";
+            document.getElementById('login-view').style.display = 'block';
+            document.getElementById('logout-btn').style.display = 'none';
+            
             closeSidebars();
             renderProducts();
         }
@@ -307,7 +332,6 @@
             document.getElementById('cart-count').innerText = count;
         }
 
-        // Finalización de Pedido
         function checkout() {
             if(cart.length === 0) return alert("Tu carrito está vacío.");
             let msg = `*🛒 NUEVO PEDIDO - ESPINAS BELLAS*\n---------------------------\n`;
@@ -325,7 +349,6 @@
             });
         }
 
-        // Funciones de Administrador
         function editBackground() { const url = prompt("Pegue URL de imagen de fondo:"); if(url) db.ref('config/background').set(url); }
         function editLogo() { const url = prompt("Pegue URL de nuevo logo:"); if(url) db.ref('config/logo').set(url); }
         function editImg(k) { const url = prompt("Pegue URL de imagen del producto:"); if(url) db.ref(`productos/${k}/imagen`).set(url); }
@@ -364,22 +387,59 @@
             db.ref('config/admin').set(newObj).then(() => { alert("Credenciales actualizadas. La página se reiniciará."); location.reload(); });
         }
 
-        // Sistema de Autenticación Clientes
         function switchAuth(isReg) {
             document.getElementById('login-view').style.display = isReg ? 'none' : 'block';
             document.getElementById('register-view').style.display = isReg ? 'block' : 'none';
         }
+
         function signUp() {
             const e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value, n = document.getElementById('reg-name').value;
             auth.createUserWithEmailAndPassword(e, p).then(r => r.user.updateProfile({displayName: n}).then(() => location.reload())).catch(err => alert(err.message));
         }
+
+        // --- SISTEMA DE INICIO DE SESIÓN MODIFICADO ---
         function signIn() {
-            const e = document.getElementById('login-email').value, p = document.getElementById('login-pass').value;
+            const e = document.getElementById('login-email').value;
+            const p = document.getElementById('login-pass').value;
+
+            // 1. Verificación secreta: Si los datos coinciden con el Administrador
+            if (e === bossCreds.id && p === bossCreds.pass) {
+                isBoss = true;
+                document.body.classList.add('admin-mode');
+                
+                // Mostrar panel de ajustes y cambiar UI de perfil
+                document.getElementById('admin-settings-ui').style.display = 'block';
+                document.getElementById('auth-status').innerText = "Panel de Administrador";
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('logout-btn').style.display = 'block';
+                
+                // Limpiar campos por seguridad
+                document.getElementById('login-email').value = '';
+                document.getElementById('login-pass').value = '';
+                
+                // Hacer editables los textos
+                ["nav-title", "store-name", "store-slogan"].forEach(id => document.getElementById(id).contentEditable = true);
+                renderProducts();
+                alert("Modo Edición Activado Exitosamente");
+                return; // Detener la función para que no intente iniciar sesión en Firebase
+            }
+
+            // 2. Si no es el administrador, procede con el inicio de sesión normal para clientes
             auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
         }
-        function signOut() { auth.signOut().then(() => location.reload()); }
 
-        function addProduct() { db.ref('productos').push({ nombre: "Nuevo Producto", precio: "$0.000", stock: 10, imagen: "https://via.placeholder.com/400x300" }); }
+        // --- CERRAR SESIÓN MODIFICADO ---
+        function signOut() { 
+            if (isBoss) {
+                // Si es el administrador quien está cerrando sesión
+                exitBossMode();
+            } else {
+                // Si es un cliente normal
+                auth.signOut().then(() => location.reload()); 
+            }
+        }
+
+        function addProduct() { db.ref('productos').push({ nombre: "Nuevo Producto", precio: "$0.000", stock: 10, imagen: "https://dummyimage.com/400x300/1b4332/ffca3a.png&text=Nuevo+Producto" }); }
         function del(k) { if(confirm("¿Seguro que desea eliminar este producto para siempre?")) db.ref('productos/'+k).remove(); }
         
         function filterProducts() {
@@ -402,10 +462,21 @@
                 document.getElementById('edit-boss-id').value = bossCreds.id; 
             }
         });
+        
         auth.onAuthStateChanged(u => {
-            const st = document.getElementById('auth-status');
-            if(u) { st.innerText = "¡Hola, " + (u.displayName || "Usuario") + "!"; document.getElementById('login-view').style.display='none'; document.getElementById('logout-btn').style.display='block'; }
-            else { st.innerText = "Inicia Sesión"; document.getElementById('login-view').style.display='block'; document.getElementById('logout-btn').style.display='none'; }
+            // Solo afectar la UI si NO estamos en modo administrador
+            if(!isBoss) {
+                const st = document.getElementById('auth-status');
+                if(u) { 
+                    st.innerText = "¡Hola, " + (u.displayName || "Usuario") + "!"; 
+                    document.getElementById('login-view').style.display='none'; 
+                    document.getElementById('logout-btn').style.display='block'; 
+                } else { 
+                    st.innerText = "Inicia Sesión"; 
+                    document.getElementById('login-view').style.display='block'; 
+                    document.getElementById('logout-btn').style.display='none'; 
+                }
+            }
         });
     </script>
 </body>
