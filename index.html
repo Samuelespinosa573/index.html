@@ -165,7 +165,7 @@
     <header id="dynamic-header" onclick="if(isBoss) editBackground()">
         <div class="header-overlay"></div>
         <div class="header-content">
-            <img src="https://via.placeholder.com/150" id="store-logo" title="Clic para cambiar logo" onclick="event.stopPropagation(); if(isBoss) editLogo()">
+            <img src="https://dummyimage.com/150x150/ffffff/1b4332.png&text=Logo" id="store-logo" title="Clic para cambiar logo" onclick="event.stopPropagation(); if(isBoss) editLogo()">
             <h1 id="store-name" style="font-family: 'Playfair Display', serif; font-size: 3rem; margin-top: 15px;" onblur="if(isBoss) saveChanges()">Cargando...</h1>
             <p id="store-slogan" style="font-size: 1.2rem; opacity: 0.9;" onblur="if(isBoss) saveChanges()">Calidad y Frescura garantizada</p>
         </div>
@@ -181,6 +181,7 @@
         </div>
     </section>
 
+    <!-- Modal de Vista Detallada de Producto -->
     <div id="product-modal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="close-modal" onclick="closeModal(true)">&times;</button>
@@ -218,6 +219,7 @@
         </div>
     </div>
 
+    <!-- Sidebar de Perfil y Admin Oculto -->
     <aside class="sidebar" id="user-sidebar">
         <button class="btn-y" onclick="closeSidebars()" style="margin-bottom:30px;">← Volver</button>
         
@@ -255,6 +257,7 @@
         </div>
     </aside>
 
+    <!-- Sidebar de Carrito -->
     <aside class="sidebar" id="cart-sidebar">
         <button class="btn-y" onclick="closeSidebars()">← Volver</button>
         <h2 style="margin:25px 0 15px;">Tu Pedido Actual</h2>
@@ -274,17 +277,9 @@
         <button class="btn-v" style="background:var(--rojo);" onclick="exitBossMode()">Cerrar Edición</button>
     </footer>
 
+    <!-- INICIO DEL SCRIPT -->
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAOCuJ_tFSsKKqKXtgGvrrZgWDAPqt2uEk",
-            authDomain: "fruteria-las-espinas.firebaseapp.com",
-            databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com",
-            projectId: "fruteria-las-espinas"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const auth = firebase.auth();
-
+        // Declaración global de las funciones para que HTML las detecte siempre
         let isBoss = false;
         let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
         let allProductsData = {};
@@ -302,24 +297,20 @@
                 const el = document.getElementById(id);
                 if(el) el.contentEditable = false;
             });
-            
             document.getElementById('auth-status').innerText = "Inicia Sesión";
             document.getElementById('login-view').style.display = 'block';
             document.getElementById('logout-btn').style.display = 'none';
-            
             closeSidebars(); renderProducts();
         }
 
-        // Renderizado de la cuadrícula
         function renderProducts() {
             const grid = document.getElementById('product-grid');
+            if(!grid) return;
             grid.innerHTML = "";
             for(let k in allProductsData) {
                 const p = allProductsData[k];
                 const stock = p.stock || 0;
-                
-                // Soporte para múltiples imágenes (fallback a 'imagen' simple si no existe el array)
-                const mainImg = (p.imagenes && p.imagenes.length > 0) ? p.imagenes[0] : (p.imagen || "https://via.placeholder.com/400x300?text=Sin+Imagen");
+                const mainImg = (p.imagenes && p.imagenes.length > 0) ? p.imagenes[0] : (p.imagen || "https://dummyimage.com/400x300/f0f2f5/081c15.png&text=Sin+Imagen");
 
                 grid.innerHTML += `
                     <div class="card" data-key="${k}" data-name="${(p.nombre||'').toLowerCase()}">
@@ -344,14 +335,12 @@
             }
         }
 
-        // --- SISTEMA DEL MODAL (VISTA DETALLADA) ---
         function openProductModal(k) {
             currentModalKey = k;
             const p = allProductsData[k];
             const stock = p.stock || 0;
             
-            // Cargar Galería
-            let imgs = (p.imagenes && p.imagenes.length > 0) ? p.imagenes : (p.imagen ? [p.imagen] : ["https://via.placeholder.com/400x300?text=Sin+Imagen"]);
+            let imgs = (p.imagenes && p.imagenes.length > 0) ? p.imagenes : (p.imagen ? [p.imagen] : ["https://dummyimage.com/400x300/f0f2f5/081c15.png&text=Sin+Imagen"]);
             
             document.getElementById('modal-main-img').src = imgs[0];
             let thumbHTML = '';
@@ -360,13 +349,11 @@
             });
             document.getElementById('modal-thumbs').innerHTML = thumbHTML;
 
-            // Cargar Textos
             document.getElementById('modal-title').innerText = p.nombre || "Producto sin nombre";
             document.getElementById('modal-price').innerText = p.precio || "$0";
             document.getElementById('modal-desc').innerText = p.descripcion || "No hay una descripción detallada para este producto todavía.";
             document.getElementById('modal-features').innerText = p.caracteristicas || "Características no especificadas.";
 
-            // Configurar Botón Carrito
             const btnCart = document.getElementById('modal-add-cart');
             btnCart.onclick = () => { addToCart(k); };
             if(stock <= 0) {
@@ -375,7 +362,6 @@
                 btnCart.disabled = false; btnCart.innerText = "🛒 Añadir al Carrito"; btnCart.style.background = "var(--verde-claro)";
             }
 
-            // Configurar Controles de Administrador en Modal
             ['modal-title', 'modal-price', 'modal-desc', 'modal-features'].forEach(id => {
                 document.getElementById(id).contentEditable = isBoss;
             });
@@ -402,42 +388,14 @@
             }
         }
 
-        function saveModalChanges() {
-            if(!isBoss || !currentModalKey) return;
-            const up = {};
-            up[`productos/${currentModalKey}/nombre`] = document.getElementById('modal-title').innerText;
-            up[`productos/${currentModalKey}/precio`] = document.getElementById('modal-price').innerText;
-            up[`productos/${currentModalKey}/descripcion`] = document.getElementById('modal-desc').innerText;
-            up[`productos/${currentModalKey}/caracteristicas`] = document.getElementById('modal-features').innerText;
-            up[`productos/${currentModalKey}/stock`] = parseInt(document.getElementById('modal-stock').value) || 0;
-            
-            db.ref().update(up).then(() => { alert('¡Detalles del producto guardados exitosamente!'); });
-        }
-
-        function editModalImages() {
-            if(!isBoss || !currentModalKey) return;
-            const urls = prompt("Ingresa las URLs de las imágenes separadas por una COMA (,):\n\nEjemplo: url1.jpg, url2.png, url3.jpg");
-            if(urls) {
-                const arr = urls.split(',').map(u => u.trim()).filter(u => u !== '');
-                if(arr.length > 0) {
-                    db.ref(`productos/${currentModalKey}/imagenes`).set(arr);
-                    db.ref(`productos/${currentModalKey}/imagen`).set(arr[0]); // Por compatibilidad
-                    alert("Imágenes guardadas. Se actualizarán enseguida.");
-                    openProductModal(currentModalKey); // Recargar modal
-                }
-            }
-        }
-        // --- FIN SISTEMA MODAL ---
-
         function addToCart(key) {
             const p = allProductsData[key], existing = cart.find(i => i.key === key);
             const currentStock = p.stock || 0;
             if(existing) {
-                if(existing.qty < currentStock) existing.qty++; else return alert("Lo sentimos, no hay más unidades disponibles de este producto.");
+                if(existing.qty < currentStock) existing.qty++; else return alert("Lo sentimos, no hay más unidades disponibles.");
             } else { cart.push({key, name: p.nombre, price: p.precio, qty: 1}); }
             updateCartUI();
             
-            // Pequeño feedback visual
             const btn = document.getElementById('cart-count');
             btn.style.transform = 'scale(1.3)';
             setTimeout(() => btn.style.transform = 'scale(1)', 300);
@@ -474,22 +432,196 @@
             document.getElementById('cart-count').innerText = count;
         }
 
-        function checkout() {
-            if(cart.length === 0) return alert("Tu carrito está vacío.");
-            let msg = `*🛒 NUEVO PEDIDO - ESPINAS BELLAS*\n---------------------------\n`;
-            cart.forEach(i => msg += `✅ ${i.qty}x ${i.name} (${i.price})\n`);
-            msg += `---------------------------\n*💰 TOTAL A PAGAR: ${document.getElementById('cart-total').innerText}*`;
-            
-            const up = {};
-            cart.forEach(i => {
-                const nS = (allProductsData[i.key].stock || 0) - i.qty;
-                up[`productos/${i.key}/stock`] = nS < 0 ? 0 : nS;
-            });
-            db.ref().update(up).then(() => { 
-                window.open(`https://wa.me/${bossCreds.wa.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank'); 
-                cart = []; updateCartUI(); closeSidebars(); 
-            });
+        function switchAuth(isReg) {
+            document.getElementById('login-view').style.display = isReg ? 'none' : 'block';
+            document.getElementById('register-view').style.display = isReg ? 'block' : 'none';
         }
 
-        function editBackground() { const url = prompt("Pegue URL de imagen de fondo:"); if(url) db.ref('config/background').set(url); }
-        function editLogo() { const url = prompt("Pegue URL de nuevo logo:"); if(url) db.ref('config/logo').set
+        function filterProducts() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            document.querySelectorAll('.card').forEach(c => c.style.display = c.dataset.name.includes(q) ? 'flex' : 'none');
+        }
+
+        // BLOQUE DE INICIALIZACIÓN DE FIREBASE (Protegido contra errores)
+        try {
+            if (typeof firebase === 'undefined') {
+                alert("⚠️ Advertencia: No se pudieron cargar los recursos de Firebase. Si estás usando un bloqueador de anuncios (como AdBlock o Brave Shields), desactívalo temporalmente e intenta recargar la página.");
+            } else {
+                const firebaseConfig = {
+                    apiKey: "AIzaSyAOCuJ_tFSsKKqKXtgGvrrZgWDAPqt2uEk",
+                    authDomain: "fruteria-las-espinas.firebaseapp.com",
+                    databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com",
+                    projectId: "fruteria-las-espinas"
+                };
+                firebase.initializeApp(firebaseConfig);
+                const db = firebase.database();
+                const auth = firebase.auth();
+
+                // Funciones que requieren Base de Datos:
+                window.saveModalChanges = function() {
+                    if(!isBoss || !currentModalKey) return;
+                    const up = {};
+                    up[`productos/${currentModalKey}/nombre`] = document.getElementById('modal-title').innerText;
+                    up[`productos/${currentModalKey}/precio`] = document.getElementById('modal-price').innerText;
+                    up[`productos/${currentModalKey}/descripcion`] = document.getElementById('modal-desc').innerText;
+                    up[`productos/${currentModalKey}/caracteristicas`] = document.getElementById('modal-features').innerText;
+                    up[`productos/${currentModalKey}/stock`] = parseInt(document.getElementById('modal-stock').value) || 0;
+                    db.ref().update(up).then(() => { alert('¡Detalles del producto guardados exitosamente!'); });
+                };
+
+                window.editModalImages = function() {
+                    if(!isBoss || !currentModalKey) return;
+                    const urls = prompt("Ingresa las URLs de las imágenes separadas por una COMA (,):");
+                    if(urls) {
+                        const arr = urls.split(',').map(u => u.trim()).filter(u => u !== '');
+                        if(arr.length > 0) {
+                            db.ref(`productos/${currentModalKey}/imagenes`).set(arr);
+                            db.ref(`productos/${currentModalKey}/imagen`).set(arr[0]); 
+                            alert("Imágenes guardadas. Se actualizarán enseguida.");
+                            openProductModal(currentModalKey); 
+                        }
+                    }
+                };
+
+                window.checkout = function() {
+                    if(cart.length === 0) return alert("Tu carrito está vacío.");
+                    let msg = `*🛒 NUEVO PEDIDO - ESPINAS BELLAS*\n---------------------------\n`;
+                    cart.forEach(i => msg += `✅ ${i.qty}x ${i.name} (${i.price})\n`);
+                    msg += `---------------------------\n*💰 TOTAL A PAGAR: ${document.getElementById('cart-total').innerText}*`;
+                    
+                    const up = {};
+                    cart.forEach(i => {
+                        const nS = (allProductsData[i.key].stock || 0) - i.qty;
+                        up[`productos/${i.key}/stock`] = nS < 0 ? 0 : nS;
+                    });
+                    db.ref().update(up).then(() => { 
+                        window.open(`https://wa.me/${bossCreds.wa.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank'); 
+                        cart = []; updateCartUI(); closeSidebars(); 
+                    });
+                };
+
+                window.editBackground = function() { const url = prompt("Pegue URL de imagen de fondo:"); if(url) db.ref('config/background').set(url); };
+                window.editLogo = function() { const url = prompt("Pegue URL de nuevo logo:"); if(url) db.ref('config/logo').set(url); };
+
+                window.runDiagnostics = function() {
+                    const res = document.getElementById('diag-results'); document.getElementById('diag-panel').style.display = 'block';
+                    res.innerHTML = `🔹 <b>Firebase:</b> Conectado y Sincronizado.<br>🔹 <b>Catálogo:</b> ${Object.keys(allProductsData).length} productos.<br>🔹 <b>Módulo Modal:</b> Activo.<br>🔹 <b>WhatsApp:</b> +${bossCreds.wa}.`;
+                };
+
+                window.saveChanges = function() {
+                    const up = {};
+                    up['config/nav_title'] = document.getElementById('nav-title').innerText;
+                    up['config/name'] = document.getElementById('store-name').innerText;
+                    up['config/slogan'] = document.getElementById('store-slogan').innerText;
+                    document.querySelectorAll('.card').forEach(c => {
+                        const k = c.dataset.key;
+                        up[`productos/${k}/nombre`] = c.querySelector('.e-n').innerText;
+                        up[`productos/${k}/precio`] = c.querySelector('.e-p').innerText;
+                        if(isBoss) up[`productos/${k}/stock`] = parseInt(c.querySelector('.e-s').value || 0);
+                    });
+                    db.ref().update(up).then(() => alert("Cuadrícula y textos de portada actualizados correctamente."));
+                };
+
+                window.updateAdminCreds = function() {
+                    const old = document.getElementById('confirm-old-pass').value;
+                    if(old !== bossCreds.pass) return alert("Error: La clave actual no coincide.");
+                    const newObj = {
+                        id: document.getElementById('edit-boss-id').value || bossCreds.id,
+                        pass: document.getElementById('edit-boss-pass').value || bossCreds.pass,
+                        wa: document.getElementById('edit-wa').value || bossCreds.wa
+                    };
+                    db.ref('config/admin').set(newObj).then(() => { alert("Credenciales actualizadas. La página se reiniciará."); location.reload(); });
+                };
+
+                window.signUp = function() {
+                    const e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value, n = document.getElementById('reg-name').value;
+                    auth.createUserWithEmailAndPassword(e, p).then(r => r.user.updateProfile({displayName: n}).then(() => location.reload())).catch(err => alert(err.message));
+                };
+
+                window.signIn = function() {
+                    const e = document.getElementById('login-email').value;
+                    const p = document.getElementById('login-pass').value;
+
+                    if (e === bossCreds.id && p === bossCreds.pass) {
+                        isBoss = true;
+                        document.body.classList.add('admin-mode');
+                        document.getElementById('admin-settings-ui').style.display = 'block';
+                        document.getElementById('auth-status').innerText = "Panel de Administrador";
+                        document.getElementById('login-view').style.display = 'none';
+                        document.getElementById('logout-btn').style.display = 'block';
+                        document.getElementById('login-email').value = '';
+                        document.getElementById('login-pass').value = '';
+                        ["nav-title", "store-name", "store-slogan"].forEach(id => {
+                            const el = document.getElementById(id);
+                            if(el) el.contentEditable = true;
+                        });
+                        renderProducts();
+                        alert("Modo Edición Activado Exitosamente");
+                        return; 
+                    }
+                    auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
+                };
+
+                window.signOut = function() { 
+                    if (isBoss) exitBossMode();
+                    else auth.signOut().then(() => location.reload()); 
+                };
+
+                window.addProduct = function() { 
+                    db.ref('productos').push({ 
+                        nombre: "Nuevo Producto", precio: "$0.000", stock: 10, 
+                        imagen: "https://dummyimage.com/400x300/1b4332/ffca3a.png&text=Nueva+Imagen",
+                        imagenes: ["https://dummyimage.com/400x300/1b4332/ffca3a.png&text=Nueva+Imagen"],
+                        descripcion: "Escribe aquí la descripción detallada del producto.",
+                        caracteristicas: "Color: N/A\nTamaño: N/A\nMaterial: N/A"
+                    }); 
+                };
+
+                window.del = function(k) { if(confirm("¿Seguro que desea eliminar este producto?")) db.ref('productos/'+k).remove(); };
+                
+                // Conexiones en tiempo real
+                db.ref('productos').on('value', snap => { 
+                    allProductsData = snap.val() || {}; 
+                    renderProducts(); 
+                    if(currentModalKey && allProductsData[currentModalKey] && !isBoss) {
+                        openProductModal(currentModalKey);
+                    } else if (currentModalKey && !allProductsData[currentModalKey]) {
+                        closeModal(true); 
+                    }
+                });
+
+                db.ref('config').on('value', snap => {
+                    const c = snap.val(); if(!c) return;
+                    if(c.nav_title) document.getElementById('nav-title').innerText = c.nav_title;
+                    if(c.name) document.getElementById('store-name').innerText = c.name;
+                    if(c.slogan) document.getElementById('store-slogan').innerText = c.slogan;
+                    if(c.logo) document.getElementById('store-logo').src = c.logo;
+                    if(c.background) document.getElementById('dynamic-header').style.backgroundImage = `url('${c.background}')`;
+                    if(c.admin) { 
+                        bossCreds = c.admin; 
+                        document.getElementById('edit-wa').value = bossCreds.wa; 
+                        document.getElementById('edit-boss-id').value = bossCreds.id; 
+                    }
+                });
+                
+                auth.onAuthStateChanged(u => {
+                    if(!isBoss) {
+                        const st = document.getElementById('auth-status');
+                        if(u) { 
+                            st.innerText = "¡Hola, " + (u.displayName || "Usuario") + "!"; 
+                            document.getElementById('login-view').style.display='none'; 
+                            document.getElementById('logout-btn').style.display='block'; 
+                        } else { 
+                            st.innerText = "Inicia Sesión"; 
+                            document.getElementById('login-view').style.display='block'; 
+                            document.getElementById('logout-btn').style.display='none'; 
+                        }
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Fallo al inicializar la base de datos:", e);
+        }
+    </script>
+</body>
+</html>
