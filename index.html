@@ -116,10 +116,19 @@
         
         .modal-gallery { flex: 1.2; display: flex; flex-direction: column; gap: 15px; }
         .modal-main-img { width: 100%; height: 350px; object-fit: cover; border-radius: 15px; box-shadow: var(--shadow-soft); }
-        .modal-thumbs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
-        .modal-thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: var(--transition); }
+        .modal-thumbs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; align-items: center; }
+        .modal-thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: var(--transition); flex-shrink: 0; }
         .modal-thumbs img:hover, .modal-thumbs img.active { border-color: var(--verde); opacity: 1; transform: scale(1.05); }
         
+        /* Botón estilo '+' para añadir imágenes fácilmente */
+        .modal-thumb-add {
+            width: 70px; height: 70px; border-radius: 10px; cursor: pointer;
+            border: 2px dashed var(--verde); display: flex; align-items: center;
+            justify-content: center; font-size: 1.8rem; color: var(--verde);
+            background: #fff; transition: var(--transition); flex-shrink: 0;
+        }
+        .modal-thumb-add:hover { background: var(--verde); color: white; transform: scale(1.05); }
+
         .modal-details { flex: 1; display: flex; flex-direction: column; }
         .modal-details h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--oscuro); margin-bottom: 10px; }
         .modal-details h3 { color: var(--verde-claro); font-size: 1.8rem; margin-bottom: 20px; font-weight: 800; }
@@ -189,7 +198,8 @@
             <div class="modal-gallery">
                 <img id="modal-main-img" class="modal-main-img" src="">
                 <div id="modal-thumbs" class="modal-thumbs"></div>
-                <button id="btn-edit-imgs" class="btn-y" style="display:none; width:100%; font-size:0.9rem;" onclick="editModalImages()">📸 Cambiar / Añadir Imágenes</button>
+                <!-- Input invisible para el selector de archivos del computador -->
+                <input type="file" id="local-file-input" style="display:none" accept="image/*" onchange="handleLocalFileSelect(event)">
             </div>
             
             <div class="modal-details">
@@ -279,7 +289,6 @@
 
     <!-- INICIO DEL SCRIPT -->
     <script>
-        // Declaración global de las funciones para que HTML las detecte siempre
         let isBoss = false;
         let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
         let allProductsData = {};
@@ -347,6 +356,12 @@
             imgs.forEach((img, idx) => {
                 thumbHTML += `<img src="${img}" class="${idx === 0 ? 'active' : ''}" onclick="changeModalMainImg(this, '${img}')">`;
             });
+
+            // Si es administrador, añadimos el botón '+' al final de las miniaturas
+            if (isBoss) {
+                thumbHTML += `<div class="modal-thumb-add" onclick="promptAddImage()" title="Añadir nueva imagen">+</div>`;
+            }
+
             document.getElementById('modal-thumbs').innerHTML = thumbHTML;
 
             document.getElementById('modal-title').innerText = p.nombre || "Producto sin nombre";
@@ -370,9 +385,50 @@
             if(isBoss) document.getElementById('modal-stock').value = stock;
             
             document.getElementById('modal-save-btn').style.display = isBoss ? 'block' : 'none';
-            document.getElementById('btn-edit-imgs').style.display = isBoss ? 'block' : 'none';
 
             document.getElementById('product-modal').style.display = 'flex';
+        }
+
+        // Función para preguntar cómo quiere añadir la imagen al hacer clic en '+'
+        function promptAddImage() {
+            if (!isBoss || !currentModalKey) return;
+            const opcion = confirm("¿Cómo deseas agregar la nueva imagen?\n\n• Aceptar: Buscar imagen en los archivos de tu computador.\n• Cancelar: Escribir o pegar una URL de internet.");
+            if (opcion) {
+                // Abre el explorador de archivos del computador
+                document.getElementById('local-file-input').click();
+            } else {
+                // Pide la URL por un cuadro de texto
+                const url = prompt("Ingresa la URL de la imagen:");
+                if (url && url.trim() !== "") {
+                    saveNewImageToProduct(url.trim());
+                }
+            }
+        }
+
+        // Maneja la subida del archivo local desde el computador
+        function handleLocalFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                saveNewImageToProduct(base64Image);
+            };
+            reader.readAsDataURL(file);
+            event.target.value = ''; // Limpiar input
+        }
+
+        // Guarda la imagen nueva (ya sea URL o archivo local convertido) en Firebase
+        function saveNewImageToProduct(imgSrc) {
+            if (!currentModalKey) return;
+            let p = allProductsData[currentModalKey];
+            let imgs = p.imagenes ? [...p.imagenes] : (p.imagen ? [p.imagen] : []);
+            imgs.push(imgSrc);
+
+            db.ref(`productos/${currentModalKey}/imagenes`).set(imgs).then(() => {
+                db.ref(`productos/${currentModalKey}/imagen`).set(imgs[0]);
+                alert("¡Imagen añadida con éxito!");
+            });
         }
 
         function changeModalMainImg(element, src) {
@@ -442,10 +498,10 @@
             document.querySelectorAll('.card').forEach(c => c.style.display = c.dataset.name.includes(q) ? 'flex' : 'none');
         }
 
-        // BLOQUE DE INICIALIZACIÓN DE FIREBASE (Protegido contra errores)
+        // BLOQUE DE INICIALIZACIÓN DE FIREBASE
         try {
             if (typeof firebase === 'undefined') {
-                alert("⚠️ Advertencia: No se pudieron cargar los recursos de Firebase. Si estás usando un bloqueador de anuncios (como AdBlock o Brave Shields), desactívalo temporalmente e intenta recargar la página.");
+                alert("⚠️ Advertencia: No se pudieron cargar los recursos de Firebase. Revisa tu conexión o bloqueadores.");
             } else {
                 const firebaseConfig = {
                     apiKey: "AIzaSyAOCuJ_tFSsKKqKXtgGvrrZgWDAPqt2uEk",
@@ -457,7 +513,6 @@
                 const db = firebase.database();
                 const auth = firebase.auth();
 
-                // Funciones que requieren Base de Datos:
                 window.saveModalChanges = function() {
                     if(!isBoss || !currentModalKey) return;
                     const up = {};
@@ -467,20 +522,6 @@
                     up[`productos/${currentModalKey}/caracteristicas`] = document.getElementById('modal-features').innerText;
                     up[`productos/${currentModalKey}/stock`] = parseInt(document.getElementById('modal-stock').value) || 0;
                     db.ref().update(up).then(() => { alert('¡Detalles del producto guardados exitosamente!'); });
-                };
-
-                window.editModalImages = function() {
-                    if(!isBoss || !currentModalKey) return;
-                    const urls = prompt("Ingresa las URLs de las imágenes separadas por una COMA (,):");
-                    if(urls) {
-                        const arr = urls.split(',').map(u => u.trim()).filter(u => u !== '');
-                        if(arr.length > 0) {
-                            db.ref(`productos/${currentModalKey}/imagenes`).set(arr);
-                            db.ref(`productos/${currentModalKey}/imagen`).set(arr[0]); 
-                            alert("Imágenes guardadas. Se actualizarán enseguida.");
-                            openProductModal(currentModalKey); 
-                        }
-                    }
                 };
 
                 window.checkout = function() {
@@ -579,7 +620,6 @@
 
                 window.del = function(k) { if(confirm("¿Seguro que desea eliminar este producto?")) db.ref('productos/'+k).remove(); };
                 
-                // Conexiones en tiempo real
                 db.ref('productos').on('value', snap => { 
                     allProductsData = snap.val() || {}; 
                     renderProducts(); 
