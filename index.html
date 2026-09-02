@@ -116,10 +116,24 @@
         
         .modal-gallery { flex: 1.2; display: flex; flex-direction: column; gap: 15px; }
         .modal-main-img { width: 100%; height: 350px; object-fit: cover; border-radius: 15px; box-shadow: var(--shadow-soft); }
-        .modal-thumbs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; align-items: center; }
-        .modal-thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: var(--transition); flex-shrink: 0; }
+        .modal-thumbs { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: center; }
+        
+        /* Contenedores de miniaturas y botón de basura */
+        .modal-thumb-wrap { position: relative; flex-shrink: 0; }
+        .modal-thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: var(--transition); display: block; }
         .modal-thumbs img:hover, .modal-thumbs img.active { border-color: var(--verde); opacity: 1; transform: scale(1.05); }
         
+        .modal-thumb-del {
+            position: absolute; top: -6px; right: -6px;
+            background: var(--rojo); color: white; border: none;
+            border-radius: 50%; width: 22px; height: 22px;
+            font-size: 11px; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: var(--transition);
+            z-index: 10;
+        }
+        .modal-thumb-del:hover { transform: scale(1.15); background: #c5222f; }
+
         /* Botón estilo '+' para añadir imágenes fácilmente */
         .modal-thumb-add {
             width: 70px; height: 70px; border-radius: 10px; cursor: pointer;
@@ -294,7 +308,7 @@
         let allProductsData = {};
         let cart = [];
         let currentModalKey = null;
-        let db, auth; // Declaradas de forma global para evitar errores de referencia
+        let db, auth;
 
         function openSidebar(id) { document.getElementById(id).classList.add('active'); }
         function closeSidebars() { document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('active')); }
@@ -355,7 +369,11 @@
             document.getElementById('modal-main-img').src = imgs[0];
             let thumbHTML = '';
             imgs.forEach((img, idx) => {
-                thumbHTML += `<img src="${img}" class="${idx === 0 ? 'active' : ''}" onclick="changeModalMainImg(this, '${img}')">`;
+                thumbHTML += `
+                    <div class="modal-thumb-wrap">
+                        <img src="${img}" class="${idx === 0 ? 'active' : ''}" onclick="changeModalMainImg(this, '${img}')">
+                        ${isBoss ? `<button class="modal-thumb-del" onclick="event.stopPropagation(); deleteModalImage(${idx})" title="Eliminar imagen">🗑️</button>` : ''}
+                    </div>`;
             });
 
             if (isBoss) {
@@ -422,13 +440,30 @@
 
             db.ref(`productos/${currentModalKey}/imagenes`).set(imgs).then(() => {
                 db.ref(`productos/${currentModalKey}/imagen`).set(imgs[0]);
-                alert("¡Imagen añadida con éxito!");
             });
+        }
+
+        function deleteModalImage(index) {
+            if (!isBoss || !currentModalKey || !db) return;
+            let p = allProductsData[currentModalKey];
+            let imgs = p.imagenes ? [...p.imagenes] : (p.imagen ? [p.imagen] : []);
+
+            if (imgs.length <= 1) {
+                alert("El producto debe tener al menos una imagen. No puedes eliminar la última.");
+                return;
+            }
+
+            if (confirm("¿Estás seguro de eliminar esta imagen?")) {
+                imgs.splice(index, 1);
+                db.ref(`productos/${currentModalKey}/imagenes`).set(imgs).then(() => {
+                    db.ref(`productos/${currentModalKey}/imagen`).set(imgs[0]);
+                });
+            }
         }
 
         function changeModalMainImg(element, src) {
             document.getElementById('modal-main-img').src = src;
-            document.querySelectorAll('#modal-thumbs img').forEach(img => img.classList.remove('active'));
+            document.querySelectorAll('.modal-thumbs img').forEach(img => img.classList.remove('active'));
             element.classList.add('active');
         }
 
@@ -618,7 +653,7 @@
                 db.ref('productos').on('value', snap => { 
                     allProductsData = snap.val() || {}; 
                     renderProducts(); 
-                    if(currentModalKey && allProductsData[currentModalKey] && !isBoss) {
+                    if(currentModalKey && allProductsData[currentModalKey]) {
                         openProductModal(currentModalKey);
                     } else if (currentModalKey && !allProductsData[currentModalKey]) {
                         closeModal(true); 
