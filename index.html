@@ -69,10 +69,11 @@
             background: white; border-radius: 25px; overflow: hidden; 
             box-shadow: var(--shadow-soft); position: relative; text-align: center; 
             border: 1px solid rgba(0,0,0,0.03); transition: var(--transition);
+            display: flex; flex-direction: column;
         }
         .card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .card img { width: 100%; height: 200px; object-fit: cover; transition: 0.5s; }
-        .card:hover img { transform: scale(1.08); }
+        .card img.card-img { width: 100%; height: 220px; object-fit: cover; transition: 0.5s; cursor: pointer; }
+        .card:hover img.card-img { transform: scale(1.05); }
         
         .badge-agotado { 
             position: absolute; top: 15px; right: 15px; background: var(--rojo); 
@@ -87,7 +88,7 @@
         .btn-v { background: var(--verde-claro); color: white; box-shadow: 0 4px 15px rgba(45, 106, 79, 0.2); }
         .btn-v:hover { background: var(--verde); transform: scale(1.05); }
 
-        /* Sidebars Glassmorphism y Mejoras de Inputs */
+        /* Sidebars Glassmorphism */
         .sidebar { 
             position: fixed; top: 0; right: -100%; width: 380px; max-width: 95%; height: 100%; 
             background: var(--glass); backdrop-filter: blur(15px); z-index: 5000; 
@@ -95,20 +96,43 @@
             box-shadow: -15px 0 35px rgba(0,0,0,0.15); overflow-y: auto;
         }
         .sidebar.active { right: 0; }
-        
-        /* NUEVO: Estilos unificados y limpios para todos los inputs de la barra lateral */
-        .sidebar input {
-            width: 100%;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            outline: none;
-            transition: var(--transition);
-        }
+        .sidebar input { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 0.95rem; outline: none; transition: var(--transition); }
         .sidebar input:focus { border-color: var(--verde); box-shadow: 0 0 8px rgba(27, 67, 50, 0.2); }
         .sidebar label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; color: var(--oscuro); }
+
+        /* Modal de Detalles del Producto */
+        .modal-overlay { 
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); z-index: 6000; justify-content: center; align-items: center; 
+            backdrop-filter: blur(5px); animation: fadeIn 0.3s ease;
+        }
+        .modal-content { 
+            background: white; padding: 35px; border-radius: 25px; width: 90%; max-width: 900px; 
+            max-height: 90vh; overflow-y: auto; display: flex; gap: 30px; position: relative; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+        .close-modal { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 2rem; color: #888; cursor: pointer; padding: 0; line-height: 1; }
+        .close-modal:hover { color: var(--rojo); }
+        
+        .modal-gallery { flex: 1.2; display: flex; flex-direction: column; gap: 15px; }
+        .modal-main-img { width: 100%; height: 350px; object-fit: cover; border-radius: 15px; box-shadow: var(--shadow-soft); }
+        .modal-thumbs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; }
+        .modal-thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: var(--transition); }
+        .modal-thumbs img:hover, .modal-thumbs img.active { border-color: var(--verde); opacity: 1; transform: scale(1.05); }
+        
+        .modal-details { flex: 1; display: flex; flex-direction: column; }
+        .modal-details h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--oscuro); margin-bottom: 10px; }
+        .modal-details h3 { color: var(--verde-claro); font-size: 1.8rem; margin-bottom: 20px; font-weight: 800; }
+        .modal-section { margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 12px; }
+        .modal-section h4 { font-size: 1rem; color: var(--oscuro); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .modal-section p { color: #555; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; }
+        .editable-field { padding: 5px; border-radius: 5px; transition: 0.3s; }
+        .editable-field[contenteditable="true"] { background: white; border: 1px dashed var(--amarillo); outline: none; }
+
+        @media (max-width: 768px) {
+            .modal-content { flex-direction: column; padding: 25px; }
+            .modal-main-img { height: 250px; }
+        }
 
         /* Footer Admin */
         .admin-footer { 
@@ -118,12 +142,9 @@
         }
         body.admin-mode .admin-footer { display: flex; }
 
-        #diag-panel { 
-            display: none; background: white; border-radius: 20px; padding: 25px; 
-            margin-top: 30px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); border: 1px solid #eee;
-        }
+        #diag-panel { display: none; background: white; border-radius: 20px; padding: 25px; margin-top: 30px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); border: 1px solid #eee; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     </style>
 </head>
@@ -134,7 +155,6 @@
         <div style="display:flex; gap:12px;">
             <button class="btn-y" onclick="openSidebar('cart-sidebar')">🛒 <span id="cart-count">0</span></button>
             <button class="btn-y" onclick="openSidebar('user-sidebar')">👤 Perfil</button>
-            <!-- El botón de herramientas (🛠️) ha sido eliminado para mantenerlo oculto -->
         </div>
     </nav>
 
@@ -146,7 +166,7 @@
         <div class="header-overlay"></div>
         <div class="header-content">
             <img src="https://via.placeholder.com/150" id="store-logo" title="Clic para cambiar logo" onclick="event.stopPropagation(); if(isBoss) editLogo()">
-            <h1 id="store-name" style="font-family: 'Playfair Display', serif; font-size: 3rem; margin-top: 15px;" onblur="if(isBoss) saveChanges()">...</h1>
+            <h1 id="store-name" style="font-family: 'Playfair Display', serif; font-size: 3rem; margin-top: 15px;" onblur="if(isBoss) saveChanges()">Cargando...</h1>
             <p id="store-slogan" style="font-size: 1.2rem; opacity: 0.9;" onblur="if(isBoss) saveChanges()">Calidad y Frescura garantizada</p>
         </div>
     </header>
@@ -161,7 +181,43 @@
         </div>
     </section>
 
-    <!-- Sidebar de Perfil y Admin Oculto -->
+    <div id="product-modal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="close-modal" onclick="closeModal(true)">&times;</button>
+            
+            <div class="modal-gallery">
+                <img id="modal-main-img" class="modal-main-img" src="">
+                <div id="modal-thumbs" class="modal-thumbs"></div>
+                <button id="btn-edit-imgs" class="btn-y" style="display:none; width:100%; font-size:0.9rem;" onclick="editModalImages()">📸 Cambiar / Añadir Imágenes</button>
+            </div>
+            
+            <div class="modal-details">
+                <h2 id="modal-title" class="editable-field">Cargando...</h2>
+                <h3 id="modal-price" class="editable-field">$0</h3>
+                
+                <div class="modal-section">
+                    <h4>📝 Descripción:</h4>
+                    <p id="modal-desc" class="editable-field"></p>
+                </div>
+                
+                <div class="modal-section">
+                    <h4>✨ Características (Color, Material, etc.):</h4>
+                    <p id="modal-features" class="editable-field"></p>
+                </div>
+
+                <div id="modal-stock-container" style="display:none; margin-bottom:15px; background: #fff3cd; padding:10px; border-radius:8px; border: 1px solid #ffe69c;">
+                    <label style="font-weight:bold; color:#856404;">📦 Stock Actual:</label>
+                    <input type="number" id="modal-stock" style="width:80px; padding:5px; margin-left:10px; border:1px solid #ccc; border-radius:5px;">
+                </div>
+
+                <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
+                    <button id="modal-add-cart" class="btn-v" style="padding: 18px; font-size:1.1rem; width:100%;">🛒 Añadir al Carrito</button>
+                    <button id="modal-save-btn" class="btn-y" style="display:none; width:100%; background:var(--oscuro); color:white;" onclick="saveModalChanges()">💾 Guardar Cambios del Producto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <aside class="sidebar" id="user-sidebar">
         <button class="btn-y" onclick="closeSidebars()" style="margin-bottom:30px;">← Volver</button>
         
@@ -186,35 +242,19 @@
             <button id="logout-btn" class="btn-v" style="background:var(--rojo); display:none; width:100%; margin-top:20px;" onclick="signOut()">Cerrar Mi Sesión</button>
         </div>
 
-        <!-- Panel de Administrador Mejorado Visualmente -->
         <div id="admin-settings-ui" style="display:none; margin-top:30px; border-top:2px solid #ddd; padding-top:25px;">
             <h3 style="color:var(--verde); margin-bottom:20px; font-size: 1.4rem;">⚙️ Panel de Control</h3>
-            
-            <div>
-                <label>WhatsApp (con código de país):</label>
-                <input type="text" id="edit-wa" placeholder="Ej: 57321...">
-            </div>
-            
-            <div>
-                <label>Nueva ID / Correo de Acceso:</label>
-                <input type="text" id="edit-boss-id">
-            </div>
-            
-            <div>
-                <label>Nueva Clave de Acceso:</label>
-                <input type="password" id="edit-boss-pass">
-            </div>
-            
+            <div><label>WhatsApp (con código de país):</label><input type="text" id="edit-wa" placeholder="Ej: 57321..."></div>
+            <div><label>Nueva ID / Correo de Acceso:</label><input type="text" id="edit-boss-id"></div>
+            <div><label>Nueva Clave de Acceso:</label><input type="password" id="edit-boss-pass"></div>
             <div style="margin-top: 10px;">
                 <label style="color: var(--rojo);">Confirma clave actual para guardar:</label>
                 <input type="password" id="confirm-old-pass" placeholder="Clave actual" style="border: 2px solid var(--amarillo);">
             </div>
-            
             <button class="btn-v" style="width:100%; background:var(--oscuro); margin-top: 10px;" onclick="updateAdminCreds()">Aplicar Cambios</button>
         </div>
     </aside>
 
-    <!-- Sidebar de Carrito -->
     <aside class="sidebar" id="cart-sidebar">
         <button class="btn-y" onclick="closeSidebars()">← Volver</button>
         <h2 style="margin:25px 0 15px;">Tu Pedido Actual</h2>
@@ -230,7 +270,7 @@
     <footer class="admin-footer">
         <button class="btn-y" onclick="runDiagnostics()">🔍 Análisis Profundo</button>
         <button class="btn-v" onclick="addProduct()">✨ Nuevo Producto</button>
-        <button class="btn-y" onclick="saveChanges()">💾 GUARDAR TODO</button>
+        <button class="btn-y" onclick="saveChanges()">💾 GUARDAR CUADRÍCULA</button>
         <button class="btn-v" style="background:var(--rojo);" onclick="exitBossMode()">Cerrar Edición</button>
     </footer>
 
@@ -249,64 +289,165 @@
         let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
         let allProductsData = {};
         let cart = [];
+        let currentModalKey = null;
 
         function openSidebar(id) { document.getElementById(id).classList.add('active'); }
         function closeSidebars() { document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('active')); }
 
-        // Función para salir del Modo Jefe
         function exitBossMode() {
             isBoss = false;
             document.body.classList.remove('admin-mode');
             document.getElementById('admin-settings-ui').style.display = 'none';
-            ["nav-title", "store-name", "store-slogan"].forEach(id => document.getElementById(id).contentEditable = false);
+            ["nav-title", "store-name", "store-slogan"].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.contentEditable = false;
+            });
             
-            // Restaurar la vista de inicio de sesión
             document.getElementById('auth-status').innerText = "Inicia Sesión";
             document.getElementById('login-view').style.display = 'block';
             document.getElementById('logout-btn').style.display = 'none';
             
-            closeSidebars();
-            renderProducts();
+            closeSidebars(); renderProducts();
         }
 
-        // Renderizado y Lógica de Productos
+        // Renderizado de la cuadrícula
         function renderProducts() {
             const grid = document.getElementById('product-grid');
             grid.innerHTML = "";
             for(let k in allProductsData) {
                 const p = allProductsData[k];
                 const stock = p.stock || 0;
+                
+                // Soporte para múltiples imágenes (fallback a 'imagen' simple si no existe el array)
+                const mainImg = (p.imagenes && p.imagenes.length > 0) ? p.imagenes[0] : (p.imagen || "https://via.placeholder.com/400x300?text=Sin+Imagen");
+
                 grid.innerHTML += `
-                    <div class="card" data-key="${k}" data-name="${p.nombre.toLowerCase()}">
+                    <div class="card" data-key="${k}" data-name="${(p.nombre||'').toLowerCase()}">
                         ${stock <= 0 ? '<div class="badge-agotado">AGOTADO</div>' : ''}
-                        <img src="${p.imagen}" onclick="if(isBoss) editImg('${k}')">
-                        <div style="padding:20px;">
-                            <h3 class="e-n" contenteditable="${isBoss}">${p.nombre}</h3>
-                            <p class="e-p" contenteditable="${isBoss}" style="color:var(--verde-claro); font-weight:800; font-size:1.2rem; margin: 10px 0;">${p.precio}</p>
-                            ${isBoss ? `<div style="font-size:0.8rem; color:#888;">Stock Actual: <input type="number" class="e-s" value="${stock}" style="width:60px; padding:4px;"></div>` : ''}
-                            <button class="btn-v" style="width:100%; margin-top:15px;" 
-                                onclick="addToCart('${k}')" ${stock <= 0 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                                ${stock <= 0 ? 'Sin Existencias' : '🛒 Añadir al Carrito'}
-                            </button>
-                            ${isBoss ? `<p onclick="del('${k}')" style="color:red; cursor:pointer; font-size:0.7rem; margin-top:15px; font-weight:bold; letter-spacing:1px;">ELIMINAR PRODUCTO</p>` : ''}
+                        <img src="${mainImg}" class="card-img" onclick="openProductModal('${k}')" title="Clic para ver detalles">
+                        
+                        <div style="padding:20px; flex-grow: 1; display: flex; flex-direction: column;">
+                            <h3 class="e-n" contenteditable="${isBoss}">${p.nombre || 'Producto'}</h3>
+                            <p class="e-p" contenteditable="${isBoss}" style="color:var(--verde-claro); font-weight:800; font-size:1.2rem; margin: 10px 0;">${p.precio || '$0'}</p>
+                            ${isBoss ? `<div style="font-size:0.8rem; color:#888;">Stock: <input type="number" class="e-s" value="${stock}" style="width:60px; padding:4px;"></div>` : ''}
+                            
+                            <div style="display: flex; gap: 10px; margin-top: auto; padding-top: 15px;">
+                                <button class="btn-y" style="flex:1; font-size: 0.9rem;" onclick="openProductModal('${k}')">👁️ Detalles</button>
+                                <button class="btn-v" style="flex:1; font-size: 0.9rem;" onclick="addToCart('${k}')" ${stock <= 0 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                                    ${stock <= 0 ? 'Agotado' : '🛒 Añadir'}
+                                </button>
+                            </div>
+                            
+                            ${isBoss ? `<p onclick="del('${k}')" style="color:red; cursor:pointer; font-size:0.75rem; margin-top:15px; font-weight:bold; letter-spacing:1px;">🗑️ ELIMINAR</p>` : ''}
                         </div>
                     </div>`;
             }
         }
 
+        // --- SISTEMA DEL MODAL (VISTA DETALLADA) ---
+        function openProductModal(k) {
+            currentModalKey = k;
+            const p = allProductsData[k];
+            const stock = p.stock || 0;
+            
+            // Cargar Galería
+            let imgs = (p.imagenes && p.imagenes.length > 0) ? p.imagenes : (p.imagen ? [p.imagen] : ["https://via.placeholder.com/400x300?text=Sin+Imagen"]);
+            
+            document.getElementById('modal-main-img').src = imgs[0];
+            let thumbHTML = '';
+            imgs.forEach((img, idx) => {
+                thumbHTML += `<img src="${img}" class="${idx === 0 ? 'active' : ''}" onclick="changeModalMainImg(this, '${img}')">`;
+            });
+            document.getElementById('modal-thumbs').innerHTML = thumbHTML;
+
+            // Cargar Textos
+            document.getElementById('modal-title').innerText = p.nombre || "Producto sin nombre";
+            document.getElementById('modal-price').innerText = p.precio || "$0";
+            document.getElementById('modal-desc').innerText = p.descripcion || "No hay una descripción detallada para este producto todavía.";
+            document.getElementById('modal-features').innerText = p.caracteristicas || "Características no especificadas.";
+
+            // Configurar Botón Carrito
+            const btnCart = document.getElementById('modal-add-cart');
+            btnCart.onclick = () => { addToCart(k); };
+            if(stock <= 0) {
+                btnCart.disabled = true; btnCart.innerText = "Producto Agotado"; btnCart.style.background = "var(--rojo)";
+            } else {
+                btnCart.disabled = false; btnCart.innerText = "🛒 Añadir al Carrito"; btnCart.style.background = "var(--verde-claro)";
+            }
+
+            // Configurar Controles de Administrador en Modal
+            ['modal-title', 'modal-price', 'modal-desc', 'modal-features'].forEach(id => {
+                document.getElementById(id).contentEditable = isBoss;
+            });
+            
+            document.getElementById('modal-stock-container').style.display = isBoss ? 'flex' : 'none';
+            if(isBoss) document.getElementById('modal-stock').value = stock;
+            
+            document.getElementById('modal-save-btn').style.display = isBoss ? 'block' : 'none';
+            document.getElementById('btn-edit-imgs').style.display = isBoss ? 'block' : 'none';
+
+            document.getElementById('product-modal').style.display = 'flex';
+        }
+
+        function changeModalMainImg(element, src) {
+            document.getElementById('modal-main-img').src = src;
+            document.querySelectorAll('#modal-thumbs img').forEach(img => img.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        function closeModal(force = false, e = null) {
+            if(force || (e && (e.target.classList.contains('modal-overlay') || e.target.classList.contains('close-modal')))) {
+                document.getElementById('product-modal').style.display = 'none';
+                currentModalKey = null;
+            }
+        }
+
+        function saveModalChanges() {
+            if(!isBoss || !currentModalKey) return;
+            const up = {};
+            up[`productos/${currentModalKey}/nombre`] = document.getElementById('modal-title').innerText;
+            up[`productos/${currentModalKey}/precio`] = document.getElementById('modal-price').innerText;
+            up[`productos/${currentModalKey}/descripcion`] = document.getElementById('modal-desc').innerText;
+            up[`productos/${currentModalKey}/caracteristicas`] = document.getElementById('modal-features').innerText;
+            up[`productos/${currentModalKey}/stock`] = parseInt(document.getElementById('modal-stock').value) || 0;
+            
+            db.ref().update(up).then(() => { alert('¡Detalles del producto guardados exitosamente!'); });
+        }
+
+        function editModalImages() {
+            if(!isBoss || !currentModalKey) return;
+            const urls = prompt("Ingresa las URLs de las imágenes separadas por una COMA (,):\n\nEjemplo: url1.jpg, url2.png, url3.jpg");
+            if(urls) {
+                const arr = urls.split(',').map(u => u.trim()).filter(u => u !== '');
+                if(arr.length > 0) {
+                    db.ref(`productos/${currentModalKey}/imagenes`).set(arr);
+                    db.ref(`productos/${currentModalKey}/imagen`).set(arr[0]); // Por compatibilidad
+                    alert("Imágenes guardadas. Se actualizarán enseguida.");
+                    openProductModal(currentModalKey); // Recargar modal
+                }
+            }
+        }
+        // --- FIN SISTEMA MODAL ---
+
         function addToCart(key) {
             const p = allProductsData[key], existing = cart.find(i => i.key === key);
+            const currentStock = p.stock || 0;
             if(existing) {
-                if(existing.qty < p.stock) existing.qty++; else return alert("Lo sentimos, no hay más unidades disponibles.");
+                if(existing.qty < currentStock) existing.qty++; else return alert("Lo sentimos, no hay más unidades disponibles de este producto.");
             } else { cart.push({key, name: p.nombre, price: p.precio, qty: 1}); }
             updateCartUI();
+            
+            // Pequeño feedback visual
+            const btn = document.getElementById('cart-count');
+            btn.style.transform = 'scale(1.3)';
+            setTimeout(() => btn.style.transform = 'scale(1)', 300);
         }
 
         function updateCartQty(key, delta) {
             const item = cart.find(i => i.key === key), p = allProductsData[key];
             if(item) {
                 item.qty += delta;
-                if(item.qty > p.stock) { item.qty = p.stock; alert("Máximo alcanzado"); }
+                if(item.qty > (p.stock || 0)) { item.qty = (p.stock || 0); alert("Stock máximo alcanzado"); }
                 if(item.qty <= 0) cart = cart.filter(i => i.key !== key);
             }
             updateCartUI();
@@ -316,15 +457,16 @@
             const list = document.getElementById('cart-items-list'); list.innerHTML = "";
             let total = 0, count = 0;
             cart.forEach(item => {
-                const pNum = parseInt(item.price.replace(/\D/g,'')) || 0, sub = pNum * item.qty;
+                const pNum = parseInt(item.price.replace(/\D/g,'')) || 0; 
+                const sub = pNum * item.qty;
                 total += sub; count += item.qty;
                 list.innerHTML += `
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:white; padding:15px; border-radius:15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
                         <div><b style="font-size:1.1rem;">${item.name}</b><br><small style="color:var(--verde-claro); font-weight:700;">$${sub.toLocaleString()}</small></div>
                         <div style="display:flex; align-items:center; gap:10px;">
-                            <button class="qty-btn" onclick="updateCartQty('${item.key}', -1)">-</button>
+                            <button style="padding: 5px 10px;" onclick="updateCartQty('${item.key}', -1)">-</button>
                             <span style="font-weight:800;">${item.qty}</span>
-                            <button class="qty-btn" onclick="updateCartQty('${item.key}', 1)">+</button>
+                            <button style="padding: 5px 10px;" onclick="updateCartQty('${item.key}', 1)">+</button>
                         </div>
                     </div>`;
             });
@@ -350,134 +492,4 @@
         }
 
         function editBackground() { const url = prompt("Pegue URL de imagen de fondo:"); if(url) db.ref('config/background').set(url); }
-        function editLogo() { const url = prompt("Pegue URL de nuevo logo:"); if(url) db.ref('config/logo').set(url); }
-        function editImg(k) { const url = prompt("Pegue URL de imagen del producto:"); if(url) db.ref(`productos/${k}/imagen`).set(url); }
-
-        function runDiagnostics() {
-            const res = document.getElementById('diag-results'); document.getElementById('diag-panel').style.display = 'block';
-            res.innerHTML = `
-                🔹 <b>Firebase:</b> Conectado y Sincronizado.<br>
-                🔹 <b>Catálogo:</b> ${Object.keys(allProductsData).length} productos detectados.<br>
-                🔹 <b>Canal de Venta:</b> WhatsApp configurado al +${bossCreds.wa}.<br>
-                🔹 <b>Rendimiento:</b> Interfaz Premium y modo dinámico OK.`;
-        }
-
-        function saveChanges() {
-            const up = {};
-            up['config/nav_title'] = document.getElementById('nav-title').innerText;
-            up['config/name'] = document.getElementById('store-name').innerText;
-            up['config/slogan'] = document.getElementById('store-slogan').innerText;
-            document.querySelectorAll('.card').forEach(c => {
-                const k = c.dataset.key;
-                up[`productos/${k}/nombre`] = c.querySelector('.e-n').innerText;
-                up[`productos/${k}/precio`] = c.querySelector('.e-p').innerText;
-                if(isBoss) up[`productos/${k}/stock`] = parseInt(c.querySelector('.e-s').value || 0);
-            });
-            db.ref().update(up).then(() => alert("Base de datos actualizada correctamente."));
-        }
-
-        function updateAdminCreds() {
-            const old = document.getElementById('confirm-old-pass').value;
-            if(old !== bossCreds.pass) return alert("Error: La clave actual no coincide.");
-            const newObj = {
-                id: document.getElementById('edit-boss-id').value || bossCreds.id,
-                pass: document.getElementById('edit-boss-pass').value || bossCreds.pass,
-                wa: document.getElementById('edit-wa').value || bossCreds.wa
-            };
-            db.ref('config/admin').set(newObj).then(() => { alert("Credenciales actualizadas. La página se reiniciará."); location.reload(); });
-        }
-
-        function switchAuth(isReg) {
-            document.getElementById('login-view').style.display = isReg ? 'none' : 'block';
-            document.getElementById('register-view').style.display = isReg ? 'block' : 'none';
-        }
-
-        function signUp() {
-            const e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value, n = document.getElementById('reg-name').value;
-            auth.createUserWithEmailAndPassword(e, p).then(r => r.user.updateProfile({displayName: n}).then(() => location.reload())).catch(err => alert(err.message));
-        }
-
-        // --- SISTEMA DE INICIO DE SESIÓN MODIFICADO ---
-        function signIn() {
-            const e = document.getElementById('login-email').value;
-            const p = document.getElementById('login-pass').value;
-
-            // 1. Verificación secreta: Si los datos coinciden con el Administrador
-            if (e === bossCreds.id && p === bossCreds.pass) {
-                isBoss = true;
-                document.body.classList.add('admin-mode');
-                
-                // Mostrar panel de ajustes y cambiar UI de perfil
-                document.getElementById('admin-settings-ui').style.display = 'block';
-                document.getElementById('auth-status').innerText = "Panel de Administrador";
-                document.getElementById('login-view').style.display = 'none';
-                document.getElementById('logout-btn').style.display = 'block';
-                
-                // Limpiar campos por seguridad
-                document.getElementById('login-email').value = '';
-                document.getElementById('login-pass').value = '';
-                
-                // Hacer editables los textos
-                ["nav-title", "store-name", "store-slogan"].forEach(id => document.getElementById(id).contentEditable = true);
-                renderProducts();
-                alert("Modo Edición Activado Exitosamente");
-                return; // Detener la función para que no intente iniciar sesión en Firebase
-            }
-
-            // 2. Si no es el administrador, procede con el inicio de sesión normal para clientes
-            auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
-        }
-
-        // --- CERRAR SESIÓN MODIFICADO ---
-        function signOut() { 
-            if (isBoss) {
-                // Si es el administrador quien está cerrando sesión
-                exitBossMode();
-            } else {
-                // Si es un cliente normal
-                auth.signOut().then(() => location.reload()); 
-            }
-        }
-
-        function addProduct() { db.ref('productos').push({ nombre: "Nuevo Producto", precio: "$0.000", stock: 10, imagen: "https://dummyimage.com/400x300/1b4332/ffca3a.png&text=Nuevo+Producto" }); }
-        function del(k) { if(confirm("¿Seguro que desea eliminar este producto para siempre?")) db.ref('productos/'+k).remove(); }
-        
-        function filterProducts() {
-            const q = document.getElementById('search-input').value.toLowerCase();
-            document.querySelectorAll('.card').forEach(c => c.style.display = c.dataset.name.includes(q) ? 'block' : 'none');
-        }
-
-        // Listeners en Tiempo Real
-        db.ref('productos').on('value', snap => { allProductsData = snap.val() || {}; renderProducts(); });
-        db.ref('config').on('value', snap => {
-            const c = snap.val(); if(!c) return;
-            if(c.nav_title) document.getElementById('nav-title').innerText = c.nav_title;
-            if(c.name) document.getElementById('store-name').innerText = c.name;
-            if(c.slogan) document.getElementById('store-slogan').innerText = c.slogan;
-            if(c.logo) document.getElementById('store-logo').src = c.logo;
-            if(c.background) document.getElementById('dynamic-header').style.backgroundImage = `url('${c.background}')`;
-            if(c.admin) { 
-                bossCreds = c.admin; 
-                document.getElementById('edit-wa').value = bossCreds.wa; 
-                document.getElementById('edit-boss-id').value = bossCreds.id; 
-            }
-        });
-        
-        auth.onAuthStateChanged(u => {
-            // Solo afectar la UI si NO estamos en modo administrador
-            if(!isBoss) {
-                const st = document.getElementById('auth-status');
-                if(u) { 
-                    st.innerText = "¡Hola, " + (u.displayName || "Usuario") + "!"; 
-                    document.getElementById('login-view').style.display='none'; 
-                    document.getElementById('logout-btn').style.display='block'; 
-                } else { 
-                    st.innerText = "Inicia Sesión"; 
-                    document.getElementById('login-view').style.display='block'; 
-                    document.getElementById('logout-btn').style.display='none'; 
-                }
-            }
-        });
-    </script>
-</body>
-</html>
+        function editLogo() { const url = prompt("Pegue URL de nuevo logo:"); if(url) db.ref('config/logo').set
