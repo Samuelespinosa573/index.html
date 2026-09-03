@@ -152,6 +152,28 @@
         }
         body.admin-mode .admin-footer { display: flex; }
         #diag-panel { display: none; background: white; border-radius: 15px; padding: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+
+        /* Optimizaciones móviles: evitan trabajo de pintura innecesario. */
+        .card { content-visibility: auto; contain-intrinsic-size: 360px 330px; }
+        .card-img { background: #f0f2f5; }
+        img { max-width: 100%; }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+            .card { border-radius: 14px; }
+            .card img.card-img { height: 150px; }
+            .card > div { padding: 10px !important; }
+            .card h3 { font-size: .95rem !important; }
+            .card .e-p { font-size: 1rem !important; }
+            .card button { padding: 8px 5px !important; font-size: .75rem !important; }
+        }
+        @media (max-width: 430px) {
+            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .nav-logo { font-size: 1.2rem; }
+            nav { padding: 10px 3%; }
+            nav > div:last-child { gap: 5px !important; }
+            nav button { padding: 8px 10px; }
+            .search-container { padding: 14px 4%; }
+        }
     </style>
 </head>
 <body id="main-body">
@@ -178,6 +200,7 @@
     </header>
 
     <section class="container">
+        <div id="catalog-status" aria-live="polite" style="display:none;"></div>
         <div class="grid" id="product-grid"></div>
 
         <div id="diag-panel">
@@ -284,395 +307,960 @@
     </footer>
 
     <!-- SCRIPT DE CARGA INSTANTÁNEA Y ULTRA FLUIDA -->
-    <script>
+    <script defer>
+        "use strict";
+
+        /*
+         * ESPINAS BELLAS - versión optimizada
+         * ----------------------------------
+         * Mantiene las funciones originales, pero:
+         * 1) Firebase no bloquea el primer render.
+         * 2) Se usa caché local para mostrar el catálogo inmediatamente en visitas posteriores.
+         * 3) Los listeners tienen manejo de errores y timeout visual.
+         * 4) Se reducen recreaciones del DOM y trabajo innecesario.
+         * 5) Las imágenes locales se comprimen antes de guardarlas en Firebase.
+         * 6) Se guardan carrito/catálogo/configuración localmente para mejorar la experiencia móvil.
+         */
+
         let isBoss = false;
         let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
         let allProductsData = {};
         let cart = [];
         let currentModalKey = null;
-        let db, auth;
+        let db = null, auth = null;
+        let firebaseReady = false;
+        let firebaseStarted = false;
+        let catalogListener = null;
+        let configListener = null;
 
-        function openSidebar(id) { document.getElementById(id).classList.add('active'); }
-        function closeSidebars() { document.querySelectorAll('.sidebar').forEach(s => s.classList.remove('active')); }
+        const CACHE_PRODUCTS = "espinas_bellas_products_v2";
+        const CACHE_CONFIG = "espinas_bellas_config_v2";
+        const CACHE_CART = "espinas_bellas_cart_v2";
+        const CACHE_TTL = 1000 * 60 * 60 * 24 * 3; // 3 días
+
+        const PLACEHOLDER =
+            "data:image/svg+xml;charset=UTF-8," +
+            encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+                <rect width="800" height="600" fill="#f0f2f5"/>
+                <circle cx="400" cy="270" r="90" fill="#1b4332"/>
+                <text x="400" y="290" text-anchor="middle" fill="#ffca3a" font-family="Arial" font-size="34" font-weight="700">ESPINAS</text>
+                <text x="400" y="350" text-anchor="middle" fill="#081c15" font-family="Arial" font-size="26">Sin imagen</text>
+            </svg>`);
+
+        const $ = id => document.getElementById(id);
+
+        function escapeHTML(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function safeKey(value) {
+            return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+        }
+
+        function readCache(key) {
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) return null;
+                const obj = JSON.parse(raw);
+                if (!obj || Date.now() - obj.time > CACHE_TTL) return null;
+                return obj.data;
+            } catch (_) {
+                return null;
+            }
+        }
+
+        function writeCache(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify({ time: Date.now(), data }));
+            } catch (e) {
+                // Si el almacenamiento está lleno, la web sigue funcionando con Firebase.
+                console.warn("No se pudo guardar caché local:", e);
+            }
+        }
+
+        function loadLocalState() {
+            const cachedProducts = readCache(CACHE_PRODUCTS);
+            const cachedConfig = readCache(CACHE_CONFIG);
+
+            if (cachedProducts && typeof cachedProducts === "object") {
+                allProductsData = cachedProducts;
+                renderProducts();
+            }
+
+            if (cachedConfig && typeof cachedConfig === "object") {
+                applyConfig(cachedConfig);
+            }
+
+            try {
+                const savedCart = localStorage.getItem(CACHE_CART);
+                if (savedCart) {
+                    const parsed = JSON.parse(savedCart);
+                    if (Array.isArray(parsed)) {
+                        cart = parsed.filter(i => i && i.key);
+                        updateCartUI();
+                    }
+                }
+            } catch (_) {}
+        }
+
+        function saveCartCache() {
+            try {
+                localStorage.setItem(CACHE_CART, JSON.stringify(cart));
+            } catch (_) {}
+        }
+
+        function setLoadingMessage(message, type = "normal") {
+            const grid = $("product-grid");
+            if (!grid) return;
+
+            if (Object.keys(allProductsData).length > 0) return;
+
+            const color = type === "error" ? "var(--rojo)" : "#666";
+            grid.innerHTML = `
+                <div style="grid-column:1/-1;text-align:center;padding:45px 20px;color:${color};">
+                    <div style="font-size:2rem;margin-bottom:10px;">${type === "error" ? "⚠️" : "⏳"}</div>
+                    <div style="font-weight:700;">${escapeHTML(message)}</div>
+                    ${type === "error" ? `
+                        <button class="btn-v" style="margin-top:15px;" onclick="location.reload()">↻ Reintentar</button>
+                    ` : ""}
+                </div>`;
+        }
+
+        function openSidebar(id) {
+            const el = $(id);
+            if (el) el.classList.add("active");
+        }
+
+        function closeSidebars() {
+            document.querySelectorAll(".sidebar").forEach(s => s.classList.remove("active"));
+        }
 
         function exitBossMode() {
             isBoss = false;
-            document.body.classList.remove('admin-mode');
-            document.getElementById('admin-settings-ui').style.display = 'none';
+            document.body.classList.remove("admin-mode");
+
+            const adminUI = $("admin-settings-ui");
+            if (adminUI) adminUI.style.display = "none";
+
             ["nav-title", "store-name", "store-slogan"].forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.contentEditable = false;
+                const el = $(id);
+                if (el) el.contentEditable = false;
             });
-            document.getElementById('auth-status').innerText = "Inicia Sesión";
-            document.getElementById('login-view').style.display = 'block';
-            document.getElementById('logout-btn').style.display = 'none';
-            closeSidebars(); renderProducts();
+
+            if ($("auth-status")) $("auth-status").innerText = "Inicia Sesión";
+            if ($("login-view")) $("login-view").style.display = "block";
+            if ($("logout-btn")) $("logout-btn").style.display = "none";
+
+            closeSidebars();
+            renderProducts();
         }
 
-        // Renderizado instantáneo y por lotes (Fragment) optimizado para redes lentas
+        function getProductImage(p) {
+            if (p && Array.isArray(p.imagenes) && p.imagenes.length) return p.imagenes[0];
+            if (p && p.imagen) return p.imagen;
+            return PLACEHOLDER;
+        }
+
+        // Renderiza en un solo fragmento para minimizar reflows/repaints.
         function renderProducts() {
-            const grid = document.getElementById('product-grid');
-            if(!grid) return;
-            
-            // Si Firebase aún no responde en la red 2.4 GHz, muestra un aviso inmediato en lugar de congelarse
-            if(Object.keys(allProductsData).length === 0) {
-                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#666; font-size:1.1rem;">⏳ Sincronizando catálogo con la tienda...</div>`;
+            const grid = $("product-grid");
+            if (!grid) return;
+
+            const keys = Object.keys(allProductsData);
+
+            if (!keys.length) {
+                setLoadingMessage(
+                    firebaseStarted
+                        ? "Cargando catálogo..."
+                        : "Preparando el catálogo...",
+                    "normal"
+                );
                 return;
             }
 
             const fragment = document.createDocumentFragment();
-            grid.innerHTML = ""; 
 
-            for(let k in allProductsData) {
-                const p = allProductsData[k];
-                const stock = p.stock || 0;
-                const mainImg = (p.imagenes && p.imagenes.length > 0) ? p.imagenes[0] : (p.imagen || "https://dummyimage.com/400x300/f0f2f5/081c15.png&text=Sin+Imagen");
+            for (const k of keys) {
+                const p = allProductsData[k] || {};
+                const stock = Number(p.stock) || 0;
+                const name = p.nombre || "Producto";
+                const price = p.precio || "$0";
+                const mainImg = getProductImage(p);
+                const keyJS = safeKey(k);
 
-                const cardDiv = document.createElement('div');
-                cardDiv.className = 'card';
+                const cardDiv = document.createElement("div");
+                cardDiv.className = "card";
                 cardDiv.dataset.key = k;
-                cardDiv.dataset.name = (p.nombre || '').toLowerCase();
+                cardDiv.dataset.name = name.toLowerCase();
+
+                const editStock = isBoss
+                    ? `<div style="font-size:.8rem;color:#888;">Stock:
+                         <input type="number" class="e-s" value="${stock}" style="width:55px;padding:3px;">
+                       </div>`
+                    : "";
+
+                const deleteButton = isBoss
+                    ? `<p onclick="del('${keyJS}')" style="color:red;cursor:pointer;font-size:.75rem;margin-top:12px;font-weight:bold;">🗑️ ELIMINAR</p>`
+                    : "";
 
                 cardDiv.innerHTML = `
-                    ${stock <= 0 ? '<div class="badge-agotado">AGOTADO</div>' : ''}
-                    <img src="${mainImg}" class="card-img" loading="lazy" onclick="openProductModal('${k}')" alt="${p.nombre || 'Producto'}">
-                    
-                    <div style="padding:15px; flex-grow: 1; display: flex; flex-direction: column;">
-                        <h3 class="e-n" contenteditable="${isBoss}" style="font-size:1.1rem;">${p.nombre || 'Producto'}</h3>
-                        <p class="e-p" contenteditable="${isBoss}" style="color:var(--verde-claro); font-weight:800; font-size:1.1rem; margin: 8px 0;">${p.precio || '$0'}</p>
-                        ${isBoss ? `<div style="font-size:0.8rem; color:#888;">Stock: <input type="number" class="e-s" value="${stock}" style="width:55px; padding:3px;"></div>` : ''}
-                        
-                        <div style="display: flex; gap: 8px; margin-top: auto; padding-top: 10px;">
-                            <button class="btn-y" style="flex:1; font-size: 0.85rem; padding: 8px;" onclick="openProductModal('${k}')">👁️ Detalles</button>
-                            <button class="btn-v" style="flex:1; font-size: 0.85rem; padding: 8px;" onclick="addToCart('${k}')" ${stock <= 0 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                                ${stock <= 0 ? 'Agotado' : '🛒 Añadir'}
+                    ${stock <= 0 ? '<div class="badge-agotado">AGOTADO</div>' : ""}
+                    <img
+                        src="${escapeHTML(mainImg)}"
+                        class="card-img"
+                        loading="lazy"
+                        decoding="async"
+                        width="400"
+                        height="200"
+                        onclick="openProductModal('${keyJS}')"
+                        onerror="this.onerror=null;this.src=PLACEHOLDER"
+                        alt="${escapeHTML(name)}">
+
+                    <div style="padding:15px;flex-grow:1;display:flex;flex-direction:column;">
+                        <h3 class="e-n" contenteditable="${isBoss}" style="font-size:1.1rem;">${escapeHTML(name)}</h3>
+                        <p class="e-p" contenteditable="${isBoss}" style="color:var(--verde-claro);font-weight:800;font-size:1.1rem;margin:8px 0;">${escapeHTML(price)}</p>
+                        ${editStock}
+
+                        <div style="display:flex;gap:8px;margin-top:auto;padding-top:10px;">
+                            <button class="btn-y" style="flex:1;font-size:.85rem;padding:8px;" onclick="openProductModal('${keyJS}')">👁️ Detalles</button>
+                            <button
+                                class="btn-v"
+                                style="flex:1;font-size:.85rem;padding:8px;${stock <= 0 ? "opacity:.5;cursor:not-allowed;" : ""}"
+                                onclick="addToCart('${keyJS}')"
+                                ${stock <= 0 ? "disabled" : ""}>
+                                ${stock <= 0 ? "Agotado" : "🛒 Añadir"}
                             </button>
                         </div>
-                        
-                        ${isBoss ? `<p onclick="del('${k}')" style="color:red; cursor:pointer; font-size:0.75rem; margin-top:12px; font-weight:bold;">🗑️ ELIMINAR</p>` : ''}
+                        ${deleteButton}
                     </div>`;
-                
+
                 fragment.appendChild(cardDiv);
             }
-            grid.appendChild(fragment);
+
+            grid.replaceChildren(fragment);
+            filterProducts();
         }
 
         function openProductModal(k) {
             currentModalKey = k;
             const p = allProductsData[k];
-            const stock = p.stock || 0;
-            
-            let imgs = (p.imagenes && p.imagenes.length > 0) ? p.imagenes : (p.imagen ? [p.imagen] : ["https://dummyimage.com/400x300/f0f2f5/081c15.png&text=Sin+Imagen"]);
-            
-            document.getElementById('modal-main-img').src = imgs[0];
-            let thumbHTML = '';
+            if (!p) return;
+
+            const stock = Number(p.stock) || 0;
+            const imgs = Array.isArray(p.imagenes) && p.imagenes.length
+                ? p.imagenes
+                : (p.imagen ? [p.imagen] : [PLACEHOLDER]);
+
+            $("modal-main-img").src = imgs[0];
+            $("modal-main-img").decoding = "async";
+
+            let thumbHTML = "";
             imgs.forEach((img, idx) => {
                 thumbHTML += `
                     <div class="modal-thumb-wrap">
-                        <img src="${img}" class="${idx === 0 ? 'active' : ''}" loading="lazy" onclick="changeModalMainImg(this, '${img}')" alt="Miniatura">
-                        ${isBoss ? `<button class="modal-thumb-del" onclick="event.stopPropagation(); deleteModalImage(${idx})">🗑️</button>` : ''}
+                        <img
+                            src="${escapeHTML(img)}"
+                            class="${idx === 0 ? "active" : ""}"
+                            loading="lazy"
+                            decoding="async"
+                            onclick="changeModalMainImg(this, '${safeKey(img)}')"
+                            alt="Miniatura ${idx + 1}">
+                        ${isBoss ? `<button class="modal-thumb-del" onclick="event.stopPropagation();deleteModalImage(${idx})">🗑️</button>` : ""}
                     </div>`;
             });
 
-            if (isBoss) {
-                thumbHTML += `<div class="modal-thumb-add" onclick="promptAddImage()">+</div>`;
-            }
+            if (isBoss) thumbHTML += `<div class="modal-thumb-add" onclick="promptAddImage()">+</div>`;
 
-            document.getElementById('modal-thumbs').innerHTML = thumbHTML;
-            document.getElementById('modal-title').innerText = p.nombre || "Producto sin nombre";
-            document.getElementById('modal-price').innerText = p.precio || "$0";
-            document.getElementById('modal-desc').innerText = p.descripcion || "Sin descripción detallada.";
-            document.getElementById('modal-features').innerText = p.caracteristicas || "Sin características.";
+            $("modal-thumbs").innerHTML = thumbHTML;
+            $("modal-title").innerText = p.nombre || "Producto sin nombre";
+            $("modal-price").innerText = p.precio || "$0";
+            $("modal-desc").innerText = p.descripcion || "Sin descripción detallada.";
+            $("modal-features").innerText = p.caracteristicas || "Sin características.";
 
-            const btnCart = document.getElementById('modal-add-cart');
-            btnCart.onclick = () => { addToCart(k); };
-            if(stock <= 0) {
-                btnCart.disabled = true; btnCart.innerText = "Producto Agotado"; btnCart.style.background = "var(--rojo)";
+            const btnCart = $("modal-add-cart");
+            btnCart.onclick = () => addToCart(k);
+
+            if (stock <= 0) {
+                btnCart.disabled = true;
+                btnCart.innerText = "Producto Agotado";
+                btnCart.style.background = "var(--rojo)";
             } else {
-                btnCart.disabled = false; btnCart.innerText = "🛒 Añadir al Carrito"; btnCart.style.background = "var(--verde-claro)";
+                btnCart.disabled = false;
+                btnCart.innerText = "🛒 Añadir al Carrito";
+                btnCart.style.background = "var(--verde-claro)";
             }
 
-            ['modal-title', 'modal-price', 'modal-desc', 'modal-features'].forEach(id => {
-                document.getElementById(id).contentEditable = isBoss;
+            ["modal-title", "modal-price", "modal-desc", "modal-features"].forEach(id => {
+                $(id).contentEditable = isBoss;
             });
-            
-            document.getElementById('modal-stock-container').style.display = isBoss ? 'flex' : 'none';
-            if(isBoss) document.getElementById('modal-stock').value = stock;
-            document.getElementById('modal-save-btn').style.display = isBoss ? 'block' : 'none';
-            document.getElementById('product-modal').style.display = 'flex';
+
+            $("modal-stock-container").style.display = isBoss ? "flex" : "none";
+            if (isBoss) $("modal-stock").value = stock;
+            $("modal-save-btn").style.display = isBoss ? "block" : "none";
+            $("product-modal").style.display = "flex";
         }
 
         function promptAddImage() {
             if (!isBoss || !currentModalKey) return;
-            const opcion = confirm("¿Cómo deseas agregar la nueva imagen?\n\n• Aceptar: Buscar archivo local.\n• Cancelar: Pegar URL de internet.");
+
+            const opcion = confirm(
+                "¿Cómo deseas agregar la nueva imagen?\n\n" +
+                "• Aceptar: Buscar archivo local.\n" +
+                "• Cancelar: Pegar URL de internet."
+            );
+
             if (opcion) {
-                document.getElementById('local-file-input').click();
+                $("local-file-input").click();
             } else {
                 const url = prompt("Ingresa la URL de la imagen:");
-                if (url && url.trim() !== "") saveNewImageToProduct(url.trim());
+                if (url && url.trim()) saveNewImageToProduct(url.trim());
             }
         }
 
-        function handleLocalFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) { saveNewImageToProduct(e.target.result); };
-            reader.readAsDataURL(file);
-            event.target.value = '';
-        }
+        // Comprime fotos locales antes de guardarlas en RTDB.
+        function compressImageFile(file, maxSize = 1400, quality = 0.82) {
+            return new Promise((resolve, reject) => {
+                if (!file || !file.type.startsWith("image/")) {
+                    reject(new Error("El archivo no es una imagen válida."));
+                    return;
+                }
 
-        function saveNewImageToProduct(imgSrc) {
-            if (!currentModalKey || !db) return;
-            let p = allProductsData[currentModalKey];
-            let imgs = p.imagenes ? [...p.imagenes] : (p.imagen ? [p.imagen] : []);
-            imgs.push(imgSrc);
-            db.ref(`productos/${currentModalKey}/imagenes`).set(imgs).then(() => {
-                db.ref(`productos/${currentModalKey}/imagen`).set(imgs[0]);
+                const reader = new FileReader();
+
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let w = img.naturalWidth;
+                        let h = img.naturalHeight;
+
+                        if (Math.max(w, h) > maxSize) {
+                            const ratio = maxSize / Math.max(w, h);
+                            w = Math.round(w * ratio);
+                            h = Math.round(h * ratio);
+                        }
+
+                        const canvas = document.createElement("canvas");
+                        canvas.width = w;
+                        canvas.height = h;
+
+                        const ctx = canvas.getContext("2d", { alpha: false });
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        // JPEG reduce muchísimo el tamaño de las fotos de celular.
+                        const result = canvas.toDataURL("image/jpeg", quality);
+
+                        // Evita llenar accidentalmente la base de datos.
+                        if (result.length > 2_000_000) {
+                            reject(new Error("La imagen sigue siendo demasiado pesada. Usa una foto más pequeña."));
+                        } else {
+                            resolve(result);
+                        }
+                    };
+                    img.onerror = () => reject(new Error("No se pudo procesar la imagen."));
+                    img.src = e.target.result;
+                };
+
+                reader.onerror = () => reject(new Error("No se pudo leer el archivo."));
+                reader.readAsDataURL(file);
             });
         }
 
-        function deleteModalImage(index) {
-            if (!isBoss || !currentModalKey || !db) return;
-            let p = allProductsData[currentModalKey];
-            let imgs = p.imagenes ? [...p.imagenes] : (p.imagen ? [p.imagen] : []);
-            if (imgs.length <= 1) return alert("Debe tener al menos una imagen.");
-            if (confirm("¿Eliminar esta imagen?")) {
-                imgs.splice(index, 1);
-                db.ref(`productos/${currentModalKey}/imagenes`).set(imgs).then(() => {
-                    db.ref(`productos/${currentModalKey}/imagen`).set(imgs[0]);
+        async function handleLocalFileSelect(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            try {
+                const compressed = await compressImageFile(file);
+                await saveNewImageToProduct(compressed);
+            } catch (err) {
+                alert(err.message || "No se pudo cargar la imagen.");
+            } finally {
+                event.target.value = "";
+            }
+        }
+
+        async function saveNewImageToProduct(imgSrc) {
+            if (!currentModalKey || !db) return;
+
+            const p = allProductsData[currentModalKey];
+            if (!p) return;
+
+            const imgs = p.imagenes
+                ? [...p.imagenes]
+                : (p.imagen ? [p.imagen] : []);
+
+            imgs.push(imgSrc);
+
+            try {
+                await db.ref(`productos/${currentModalKey}`).update({
+                    imagenes: imgs,
+                    imagen: imgs[0]
                 });
+            } catch (err) {
+                console.error(err);
+                alert("No se pudo guardar la imagen: " + (err.message || "error de Firebase"));
+            }
+        }
+
+        async function deleteModalImage(index) {
+            if (!isBoss || !currentModalKey || !db) return;
+
+            const p = allProductsData[currentModalKey];
+            if (!p) return;
+
+            const imgs = p.imagenes
+                ? [...p.imagenes]
+                : (p.imagen ? [p.imagen] : []);
+
+            if (imgs.length <= 1) {
+                alert("Debe tener al menos una imagen.");
+                return;
+            }
+
+            if (!confirm("¿Eliminar esta imagen?")) return;
+
+            imgs.splice(index, 1);
+
+            try {
+                await db.ref(`productos/${currentModalKey}`).update({
+                    imagenes: imgs,
+                    imagen: imgs[0]
+                });
+            } catch (err) {
+                alert("No se pudo eliminar la imagen: " + (err.message || "error de Firebase"));
             }
         }
 
         function changeModalMainImg(element, src) {
-            document.getElementById('modal-main-img').src = src;
-            document.querySelectorAll('.modal-thumbs img').forEach(img => img.classList.remove('active'));
-            element.classList.add('active');
+            $("modal-main-img").src = src;
+            document.querySelectorAll(".modal-thumbs img").forEach(img => img.classList.remove("active"));
+            element.classList.add("active");
         }
 
         function closeModal(force = false, e = null) {
-            if(force || (e && (e.target.classList.contains('modal-overlay') || e.target.classList.contains('close-modal')))) {
-                document.getElementById('product-modal').style.display = 'none';
+            if (
+                force ||
+                (e && (
+                    e.target.classList.contains("modal-overlay") ||
+                    e.target.classList.contains("close-modal")
+                ))
+            ) {
+                $("product-modal").style.display = "none";
                 currentModalKey = null;
             }
         }
 
         function addToCart(key) {
-            const p = allProductsData[key], existing = cart.find(i => i.key === key);
-            const currentStock = p.stock || 0;
-            if(existing) {
-                if(existing.qty < currentStock) existing.qty++; else return alert("No hay más unidades disponibles.");
-            } else { cart.push({key, name: p.nombre, price: p.precio, qty: 1}); }
+            const p = allProductsData[key];
+            if (!p) return;
+
+            const existing = cart.find(i => i.key === key);
+            const currentStock = Number(p.stock) || 0;
+
+            if (currentStock <= 0) {
+                alert("Este producto está agotado.");
+                return;
+            }
+
+            if (existing) {
+                if (existing.qty < currentStock) existing.qty++;
+                else {
+                    alert("No hay más unidades disponibles.");
+                    return;
+                }
+            } else {
+                cart.push({
+                    key,
+                    name: p.nombre || "Producto",
+                    price: p.precio || "$0",
+                    qty: 1
+                });
+            }
+
             updateCartUI();
         }
 
         function updateCartQty(key, delta) {
-            const item = cart.find(i => i.key === key), p = allProductsData[key];
-            if(item) {
-                item.qty += delta;
-                if(item.qty > (p.stock || 0)) { item.qty = (p.stock || 0); alert("Stock máximo alcanzado"); }
-                if(item.qty <= 0) cart = cart.filter(i => i.key !== key);
+            const item = cart.find(i => i.key === key);
+            const p = allProductsData[key];
+
+            if (!item || !p) return;
+
+            item.qty += delta;
+
+            if (item.qty > (Number(p.stock) || 0)) {
+                item.qty = Number(p.stock) || 0;
+                alert("Stock máximo alcanzado");
             }
+
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.key !== key);
+            }
+
             updateCartUI();
         }
 
+        function priceToNumber(price) {
+            if (typeof price === "number") return price;
+            return parseInt(String(price || "").replace(/\D/g, ""), 10) || 0;
+        }
+
         function updateCartUI() {
-            const list = document.getElementById('cart-items-list'); list.innerHTML = "";
-            let total = 0, count = 0;
+            const list = $("cart-items-list");
+            if (!list) return;
+
+            const fragment = document.createDocumentFragment();
+            let total = 0;
+            let count = 0;
+
             cart.forEach(item => {
-                const pNum = parseInt(item.price.replace(/\D/g,'')) || 0; 
+                const pNum = priceToNumber(item.price);
                 const sub = pNum * item.qty;
-                total += sub; count += item.qty;
-                list.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:white; padding:12px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
-                        <div><b style="font-size:1rem;">${item.name}</b><br><small style="color:var(--verde-claro); font-weight:700;">$${sub.toLocaleString()}</small></div>
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <button style="padding: 4px 8px;" onclick="updateCartQty('${item.key}', -1)">-</button>
-                            <span style="font-weight:800;">${item.qty}</span>
-                            <button style="padding: 4px 8px;" onclick="updateCartQty('${item.key}', 1)">+</button>
-                        </div>
+                total += sub;
+                count += item.qty;
+
+                const row = document.createElement("div");
+                row.style.cssText =
+                    "display:flex;justify-content:space-between;align-items:center;" +
+                    "margin-bottom:12px;background:white;padding:12px;border-radius:12px;" +
+                    "box-shadow:0 2px 8px rgba(0,0,0,.03);";
+
+                row.innerHTML = `
+                    <div>
+                        <b style="font-size:1rem;">${escapeHTML(item.name)}</b><br>
+                        <small style="color:var(--verde-claro);font-weight:700;">$${sub.toLocaleString()}</small>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <button style="padding:4px 8px;" onclick="updateCartQty('${safeKey(item.key)}',-1)">-</button>
+                        <span style="font-weight:800;">${item.qty}</span>
+                        <button style="padding:4px 8px;" onclick="updateCartQty('${safeKey(item.key)}',1)">+</button>
                     </div>`;
+
+                fragment.appendChild(row);
             });
-            document.getElementById('cart-total').innerText = "$" + total.toLocaleString();
-            document.getElementById('cart-count').innerText = count;
+
+            list.replaceChildren(fragment);
+            $("cart-total").innerText = "$" + total.toLocaleString();
+            $("cart-count").innerText = count;
+            saveCartCache();
         }
 
         function switchAuth(isReg) {
-            document.getElementById('login-view').style.display = isReg ? 'none' : 'block';
-            document.getElementById('register-view').style.display = isReg ? 'block' : 'none';
+            $("login-view").style.display = isReg ? "none" : "block";
+            $("register-view").style.display = isReg ? "block" : "none";
         }
 
         function filterProducts() {
-            const q = document.getElementById('search-input').value.toLowerCase();
-            document.querySelectorAll('.card').forEach(c => c.style.display = c.dataset.name.includes(q) ? 'flex' : 'none');
+            const input = $("search-input");
+            const q = (input ? input.value : "").trim().toLowerCase();
+
+            document.querySelectorAll(".card").forEach(card => {
+                card.style.display = card.dataset.name.includes(q) ? "flex" : "none";
+            });
         }
 
-        // INICIALIZACIÓN FIREBASE SEGURA
-        try {
-            if (typeof firebase !== 'undefined') {
+        function applyConfig(c) {
+            if (!c) return;
+
+            if (c.nav_title) $("nav-title").innerText = c.nav_title;
+            if (c.name) $("store-name").innerText = c.name;
+            if (c.slogan) $("store-slogan").innerText = c.slogan;
+            if (c.logo) $("store-logo").src = c.logo;
+
+            if (c.background) {
+                // No bloquea el contenido: el fondo se carga de forma independiente.
+                $("dynamic-header").style.backgroundImage = `url("${String(c.background).replace(/"/g, '\\"')}")`;
+            }
+
+            if (c.admin) {
+                bossCreds = c.admin;
+                if ($("edit-wa")) $("edit-wa").value = bossCreds.wa || "";
+                if ($("edit-boss-id")) $("edit-boss-id").value = bossCreds.id || "";
+            }
+        }
+
+        async function saveModalChanges() {
+            if (!isBoss || !currentModalKey || !db) return;
+
+            const up = {};
+            up[`productos/${currentModalKey}/nombre`] = $("modal-title").innerText.trim();
+            up[`productos/${currentModalKey}/precio`] = $("modal-price").innerText.trim();
+            up[`productos/${currentModalKey}/descripcion`] = $("modal-desc").innerText.trim();
+            up[`productos/${currentModalKey}/caracteristicas`] = $("modal-features").innerText.trim();
+            up[`productos/${currentModalKey}/stock`] = parseInt($("modal-stock").value, 10) || 0;
+
+            try {
+                await db.ref().update(up);
+                alert("¡Guardado exitoso!");
+            } catch (err) {
+                alert("No se pudo guardar: " + (err.message || "error de Firebase"));
+            }
+        }
+
+        async function checkout() {
+            if (!cart.length) {
+                alert("Tu carrito está vacío.");
+                return;
+            }
+
+            if (!db) {
+                alert("La tienda todavía está conectando con la base de datos. Inténtalo de nuevo en unos segundos.");
+                return;
+            }
+
+            let msg = "*🛒 NUEVO PEDIDO - ESPINAS BELLAS*\\n---------------------------\\n";
+            cart.forEach(i => {
+                msg += `✅ ${i.qty}x ${i.name} (${i.price})\\n`;
+            });
+            msg += `---------------------------\\n*💰 TOTAL: ${$("cart-total").innerText}*`;
+
+            const up = {};
+
+            for (const i of cart) {
+                const product = allProductsData[i.key];
+                if (!product) continue;
+
+                const newStock = Math.max(0, (Number(product.stock) || 0) - i.qty);
+                up[`productos/${i.key}/stock`] = newStock;
+            }
+
+            try {
+                await db.ref().update(up);
+
+                const wa = String(bossCreds.wa || "").replace(/\D/g, "");
+                if (!wa) {
+                    alert("El número de WhatsApp de la tienda no está configurado.");
+                    return;
+                }
+
+                window.open(
+                    `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`,
+                    "_blank",
+                    "noopener"
+                );
+
+                cart = [];
+                updateCartUI();
+                closeSidebars();
+            } catch (err) {
+                alert("No se pudo finalizar el pedido: " + (err.message || "error de Firebase"));
+            }
+        }
+
+        function editBackground() {
+            if (!isBoss || !db) return;
+            const url = prompt("URL de fondo:");
+            if (url) db.ref("config/background").set(url.trim());
+        }
+
+        function editLogo() {
+            if (!isBoss || !db) return;
+            const url = prompt("URL de nuevo logo:");
+            if (url) db.ref("config/logo").set(url.trim());
+        }
+
+        function runDiagnostics() {
+            const res = $("diag-results");
+            $("diag-panel").style.display = "block";
+
+            const products = Object.keys(allProductsData).length;
+            const connection = firebaseReady ? "Conectado / inicializado" : "Sin conexión a Firebase";
+            const cache = readCache(CACHE_PRODUCTS) ? "Disponible" : "No disponible";
+
+            res.innerHTML = `
+                🔹 <b>Firebase:</b> ${connection}.<br>
+                🔹 <b>Catálogo:</b> ${products} productos cargados.<br>
+                🔹 <b>Caché móvil:</b> ${cache}.<br>
+                🔹 <b>WhatsApp:</b> +${escapeHTML(bossCreds.wa || "")}.
+            `;
+        }
+
+        async function saveChanges() {
+            if (!db) return;
+
+            const up = {};
+            up["config/nav_title"] = $("nav-title").innerText.trim();
+            up["config/name"] = $("store-name").innerText.trim();
+            up["config/slogan"] = $("store-slogan").innerText.trim();
+
+            document.querySelectorAll(".card").forEach(card => {
+                const k = card.dataset.key;
+                const name = card.querySelector(".e-n");
+                const price = card.querySelector(".e-p");
+                const stock = card.querySelector(".e-s");
+
+                if (name) up[`productos/${k}/nombre`] = name.innerText.trim();
+                if (price) up[`productos/${k}/precio`] = price.innerText.trim();
+                if (isBoss && stock) up[`productos/${k}/stock`] = parseInt(stock.value, 10) || 0;
+            });
+
+            try {
+                await db.ref().update(up);
+                alert("Actualizado correctamente.");
+            } catch (err) {
+                alert("No se pudo actualizar: " + (err.message || "error de Firebase"));
+            }
+        }
+
+        async function updateAdminCreds() {
+            if (!db) return;
+
+            const old = $("confirm-old-pass").value;
+
+            if (old !== bossCreds.pass) {
+                alert("La clave actual no coincide.");
+                return;
+            }
+
+            const newObj = {
+                id: $("edit-boss-id").value || bossCreds.id,
+                pass: $("edit-boss-pass").value || bossCreds.pass,
+                wa: $("edit-wa").value || bossCreds.wa
+            };
+
+            try {
+                await db.ref("config/admin").set(newObj);
+                alert("Credenciales actualizadas. Recargando...");
+                location.reload();
+            } catch (err) {
+                alert("No se pudieron actualizar las credenciales: " + (err.message || "error de Firebase"));
+            }
+        }
+
+        async function signUp() {
+            if (!auth) return alert("El sistema de autenticación aún no está listo.");
+
+            const e = $("reg-email").value.trim();
+            const p = $("reg-pass").value;
+            const n = $("reg-name").value.trim();
+
+            if (!e || !p) return alert("Completa correo y contraseña.");
+
+            try {
+                const r = await auth.createUserWithEmailAndPassword(e, p);
+                await r.user.updateProfile({ displayName: n });
+                location.reload();
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function signIn() {
+            if (!auth) return alert("El sistema de autenticación aún está conectando.");
+
+            const e = $("login-email").value.trim();
+            const p = $("login-pass").value;
+
+            if (e === bossCreds.id && p === bossCreds.pass) {
+                isBoss = true;
+                document.body.classList.add("admin-mode");
+                $("admin-settings-ui").style.display = "block";
+                $("auth-status").innerText = "Panel Admin";
+                $("login-view").style.display = "none";
+                $("logout-btn").style.display = "block";
+                $("login-email").value = "";
+                $("login-pass").value = "";
+
+                ["nav-title", "store-name", "store-slogan"].forEach(id => {
+                    const el = $(id);
+                    if (el) el.contentEditable = true;
+                });
+
+                renderProducts();
+                alert("Modo Edición Activado");
+                return;
+            }
+
+            try {
+                await auth.signInWithEmailAndPassword(e, p);
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        function signOut() {
+            if (isBoss) {
+                exitBossMode();
+            } else if (auth) {
+                auth.signOut().then(() => location.reload()).catch(err => alert(err.message));
+            }
+        }
+
+        async function addProduct() {
+            if (!db) return;
+
+            try {
+                await db.ref("productos").push({
+                    nombre: "Nuevo Producto",
+                    precio: "$0",
+                    stock: 10,
+                    imagen: PLACEHOLDER,
+                    imagenes: [PLACEHOLDER],
+                    descripcion: "Descripción detallada del producto.",
+                    caracteristicas: "Color: N/A\nTamaño: N/A"
+                });
+            } catch (err) {
+                alert("No se pudo crear el producto: " + (err.message || "error de Firebase"));
+            }
+        }
+
+        async function del(k) {
+            if (!db) return;
+            if (!confirm("¿Eliminar este producto?")) return;
+
+            try {
+                await db.ref("productos/" + k).remove();
+            } catch (err) {
+                alert("No se pudo eliminar: " + (err.message || "error de Firebase"));
+            }
+        }
+
+        function updateAuthUI(u) {
+            if (isBoss) return;
+
+            const st = $("auth-status");
+
+            if (u) {
+                st.innerText = "¡Hola, " + (u.displayName || "Usuario") + "!";
+                $("login-view").style.display = "none";
+                $("logout-btn").style.display = "block";
+            } else {
+                st.innerText = "Inicia Sesión";
+                $("login-view").style.display = "block";
+                $("logout-btn").style.display = "none";
+            }
+        }
+
+        function startFirebase() {
+            if (firebaseStarted) return;
+            firebaseStarted = true;
+
+            if (typeof firebase === "undefined") {
+                setLoadingMessage("No se pudo cargar Firebase. Comprueba tu conexión a Internet.", "error");
+                return;
+            }
+
+            try {
                 const firebaseConfig = {
-                    apiKey: "AIzaSyAOCuJ_tFSsKKqKXtgGvrrZgWDAPqt2uEk",
+                    apiKey: "AIzaSyAOCuJ_tFSsKKqXKtgGvrrZgWDAPqt2uEk",
                     authDomain: "fruteria-las-espinas.firebaseapp.com",
                     databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com",
                     projectId: "fruteria-las-espinas"
                 };
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
+
+                if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+
                 db = firebase.database();
                 auth = firebase.auth();
+                firebaseReady = true;
 
-                window.saveModalChanges = function() {
-                    if(!isBoss || !currentModalKey) return;
-                    const up = {};
-                    up[`productos/${currentModalKey}/nombre`] = document.getElementById('modal-title').innerText;
-                    up[`productos/${currentModalKey}/precio`] = document.getElementById('modal-price').innerText;
-                    up[`productos/${currentModalKey}/descripcion`] = document.getElementById('modal-desc').innerText;
-                    up[`productos/${currentModalKey}/caracteristicas`] = document.getElementById('modal-features').innerText;
-                    up[`productos/${currentModalKey}/stock`] = parseInt(document.getElementById('modal-stock').value) || 0;
-                    db.ref().update(up).then(() => { alert('¡Guardado exitoso!'); });
-                };
-
-                window.checkout = function() {
-                    if(cart.length === 0) return alert("Tu carrito está vacío.");
-                    let msg = `*🛒 NUEVO PEDIDO - ESPINAS BELLAS*\n---------------------------\n`;
-                    cart.forEach(i => msg += `✅ ${i.qty}x ${i.name} (${i.price})\n`);
-                    msg += `---------------------------\n*💰 TOTAL: ${document.getElementById('cart-total').innerText}*`;
-                    
-                    const up = {};
-                    cart.forEach(i => {
-                        const nS = (allProductsData[i.key].stock || 0) - i.qty;
-                        up[`productos/${i.key}/stock`] = nS < 0 ? 0 : nS;
-                    });
-                    db.ref().update(up).then(() => { 
-                        window.open(`https://wa.me/${bossCreds.wa.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank'); 
-                        cart = []; updateCartUI(); closeSidebars(); 
-                    });
-                };
-
-                window.editBackground = function() { const url = prompt("URL de fondo:"); if(url) db.ref('config/background').set(url); };
-                window.editLogo = function() { const url = prompt("URL de nuevo logo:"); if(url) db.ref('config/logo').set(url); };
-
-                window.runDiagnostics = function() {
-                    const res = document.getElementById('diag-results'); 
-                    document.getElementById('diag-panel').style.display = 'block';
-                    res.innerHTML = `🔹 <b>Firebase:</b> Conectado.<br>🔹 <b>Catálogo:</b> ${Object.keys(allProductsData).length} productos.<br>🔹 <b>WhatsApp:</b> +${bossCreds.wa}.`;
-                };
-
-                window.saveChanges = function() {
-                    const up = {};
-                    up['config/nav_title'] = document.getElementById('nav-title').innerText;
-                    up['config/name'] = document.getElementById('store-name').innerText;
-                    up['config/slogan'] = document.getElementById('store-slogan').innerText;
-                    document.querySelectorAll('.card').forEach(c => {
-                        const k = c.dataset.key;
-                        up[`productos/${k}/nombre`] = c.querySelector('.e-n').innerText;
-                        up[`productos/${k}/precio`] = c.querySelector('.e-p').innerText;
-                        if(isBoss) up[`productos/${k}/stock`] = parseInt(c.querySelector('.e-s').value || 0);
-                    });
-                    db.ref().update(up).then(() => alert("Actualizado correctamente."));
-                };
-
-                window.updateAdminCreds = function() {
-                    const old = document.getElementById('confirm-old-pass').value;
-                    if(old !== bossCreds.pass) return alert("La clave actual no coincide.");
-                    const newObj = {
-                        id: document.getElementById('edit-boss-id').value || bossCreds.id,
-                        pass: document.getElementById('edit-boss-pass').value || bossCreds.pass,
-                        wa: document.getElementById('edit-wa').value || bossCreds.wa
-                    };
-                    db.ref('config/admin').set(newObj).then(() => { alert("Credenciales actualizadas. Recargando..."); location.reload(); });
-                };
-
-                window.signUp = function() {
-                    const e = document.getElementById('reg-email').value, p = document.getElementById('reg-pass').value, n = document.getElementById('reg-name').value;
-                    auth.createUserWithEmailAndPassword(e, p).then(r => r.user.updateProfile({displayName: n}).then(() => location.reload())).catch(err => alert(err.message));
-                };
-
-                window.signIn = function() {
-                    const e = document.getElementById('login-email').value;
-                    const p = document.getElementById('login-pass').value;
-
-                    if (e === bossCreds.id && p === bossCreds.pass) {
-                        isBoss = true;
-                        document.body.classList.add('admin-mode');
-                        document.getElementById('admin-settings-ui').style.display = 'block';
-                        document.getElementById('auth-status').innerText = "Panel Admin";
-                        document.getElementById('login-view').style.display = 'none';
-                        document.getElementById('logout-btn').style.display = 'block';
-                        document.getElementById('login-email').value = '';
-                        document.getElementById('login-pass').value = '';
-                        ["nav-title", "store-name", "store-slogan"].forEach(id => {
-                            const el = document.getElementById(id);
-                            if(el) el.contentEditable = true;
-                        });
+                // Listener de catálogo. El callback de error evita quedarse en "Cargando..." para siempre.
+                catalogListener = db.ref("productos").on(
+                    "value",
+                    snap => {
+                        allProductsData = snap.val() || {};
+                        writeCache(CACHE_PRODUCTS, allProductsData);
                         renderProducts();
-                        alert("Modo Edición Activado");
-                        return; 
-                    }
-                    auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
-                };
 
-                window.signOut = function() { 
-                    if (isBoss) exitBossMode();
-                    else auth.signOut().then(() => location.reload()); 
-                };
-
-                window.addProduct = function() { 
-                    db.ref('productos').push({ 
-                        nombre: "Nuevo Producto", precio: "$0", stock: 10, 
-                        imagen: "https://dummyimage.com/400x300/1b4332/ffca3a.png&text=Nueva+Imagen",
-                        imagenes: ["https://dummyimage.com/400x300/1b4332/ffca3a.png&text=Nueva+Imagen"],
-                        descripcion: "Descripción detallada del producto.",
-                        caracteristicas: "Color: N/A\nTamaño: N/A"
-                    }); 
-                };
-
-                window.del = function(k) { if(confirm("¿Eliminar este producto?")) db.ref('productos/'+k).remove(); };
-                
-                db.ref('productos').on('value', snap => { 
-                    allProductsData = snap.val() || {}; 
-                    renderProducts(); 
-                    if(currentModalKey && allProductsData[currentModalKey]) {
-                        openProductModal(currentModalKey);
-                    } else if (currentModalKey && !allProductsData[currentModalKey]) {
-                        closeModal(true); 
-                    }
-                });
-
-                db.ref('config').on('value', snap => {
-                    const c = snap.val(); if(!c) return;
-                    if(c.nav_title) document.getElementById('nav-title').innerText = c.nav_title;
-                    if(c.name) document.getElementById('store-name').innerText = c.name;
-                    if(c.slogan) document.getElementById('store-slogan').innerText = c.slogan;
-                    if(c.logo) document.getElementById('store-logo').src = c.logo;
-                    if(c.background) document.getElementById('dynamic-header').style.backgroundImage = `url('${c.background}')`;
-                    if(c.admin) { 
-                        bossCreds = c.admin; 
-                        document.getElementById('edit-wa').value = bossCreds.wa; 
-                        document.getElementById('edit-boss-id').value = bossCreds.id; 
-                    }
-                });
-                
-                auth.onAuthStateChanged(u => {
-                    if(!isBoss) {
-                        const st = document.getElementById('auth-status');
-                        if(u) { 
-                            st.innerText = "¡Hola, " + (u.displayName || "Usuario") + "!"; 
-                            document.getElementById('login-view').style.display='none'; 
-                            document.getElementById('logout-btn').style.display='block'; 
-                        } else { 
-                            st.innerText = "Inicia Sesión"; 
-                            document.getElementById('login-view').style.display='block'; 
-                            document.getElementById('logout-btn').style.display='none'; 
+                        if (currentModalKey) {
+                            if (allProductsData[currentModalKey]) {
+                                openProductModal(currentModalKey);
+                            } else {
+                                closeModal(true);
+                            }
+                        }
+                    },
+                    err => {
+                        console.error("Error leyendo productos:", err);
+                        if (!Object.keys(allProductsData).length) {
+                            setLoadingMessage(
+                                "No se pudo cargar el catálogo. Revisa la conexión o las reglas de Firebase.",
+                                "error"
+                            );
                         }
                     }
+                );
+
+                configListener = db.ref("config").on(
+                    "value",
+                    snap => {
+                        const c = snap.val() || {};
+                        writeCache(CACHE_CONFIG, c);
+                        applyConfig(c);
+                    },
+                    err => console.error("Error leyendo configuración:", err)
+                );
+
+                // Firebase Auth también queda fuera del camino crítico del primer render.
+                auth.onAuthStateChanged(updateAuthUI);
+
+                // Detecta rápidamente si la conexión al RTDB está realmente disponible.
+                db.ref(".info/connected").on("value", snap => {
+                    const connected = snap.val() === true;
+                    document.body.dataset.firebaseConnected = connected ? "true" : "false";
                 });
+
+            } catch (e) {
+                console.error("Error al inicializar Firebase:", e);
+                firebaseReady = false;
+
+                if (!Object.keys(allProductsData).length) {
+                    setLoadingMessage("No se pudo iniciar la tienda. Intenta recargar la página.", "error");
+                }
             }
-        } catch (e) {
-            console.error("Error al inicializar Firebase:", e);
         }
+
+        // Si no hay caché, no dejamos la pantalla congelada indefinidamente.
+        const firebaseTimeout = setTimeout(() => {
+            if (!Object.keys(allProductsData).length && !firebaseReady) {
+                setLoadingMessage(
+                    "La conexión está tardando demasiado. Puedes reintentar sin cerrar la página.",
+                    "error"
+                );
+            }
+        }, 10000);
+
+        // Primer render inmediato: se ejecuta antes de esperar una respuesta de Firebase.
+        loadLocalState();
+        renderProducts();
+
+        // Filtrado con pequeño debounce para no recalcular el DOM en cada tecla.
+        let filterTimer = null;
+        $("search-input").addEventListener("input", () => {
+            clearTimeout(filterTimer);
+            filterTimer = setTimeout(filterProducts, 80);
+        });
+
+        // Firebase se inicia cuando los scripts defer ya están disponibles.
+        startFirebase();
+
+        window.addEventListener("load", () => {
+            clearTimeout(firebaseTimeout);
+        });
+
+        // Atajos de teclado útiles en móvil/escritorio.
+        document.addEventListener("keydown", e => {
+            if (e.key === "Escape") {
+                closeModal(true);
+                closeSidebars();
+            }
+        });
+
+        // Exponer las funciones que ya utiliza el HTML mediante onclick.
+        Object.assign(window, {
+            openSidebar, closeSidebars, exitBossMode, renderProducts,
+            openProductModal, promptAddImage, handleLocalFileSelect,
+            saveNewImageToProduct, deleteModalImage, changeModalMainImg,
+            closeModal, addToCart, updateCartQty, updateCartUI,
+            switchAuth, filterProducts, saveModalChanges, checkout,
+            editBackground, editLogo, runDiagnostics, saveChanges,
+            updateAdminCreds, signUp, signIn, signOut, addProduct, del
+        });
     </script>
 </body>
 </html>
