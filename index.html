@@ -5,12 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espinas Bellas | Premium Store</title>
     
-    <!-- Preconexión para acelerar la carga de fuentes -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
@@ -29,9 +27,8 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
-        body { background-color: #f0f2f5; color: var(--oscuro); padding-bottom: 100px; overflow-x: hidden; }
+        body { background-color: #f0f2f5; color: var(--oscuro); padding-bottom: 100px; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
 
-        /* Navbar mejorada */
         nav { 
             background: var(--verde); padding: 12px 5%; 
             display: flex; justify-content: space-between; align-items: center; 
@@ -41,144 +38,127 @@
         .nav-logo { font-family: 'Playfair Display', serif; color: var(--amarillo); font-size: 1.6rem; font-weight: 900; outline: none; transition: var(--transition); }
         .nav-logo:focus { border-bottom: 2px solid var(--amarillo); }
 
-        /* Header con Efectos */
         header {
             background-size: cover; background-position: center;
-            padding: 100px 20px; text-align: center; color: white; 
+            padding: 80px 20px; text-align: center; color: white; 
             border-bottom: 6px solid var(--amarillo);
             position: relative; overflow: hidden;
             transition: var(--transition);
         }
         .header-overlay { position: absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.7)); z-index: 1; }
-        .header-content { position: relative; z-index: 2; animation: fadeIn 1s ease; }
+        .header-content { position: relative; z-index: 2; }
         
         #store-logo { 
-            width:150px; height:150px; border-radius:50%; border:5px solid var(--amarillo); 
+            width:130px; height:130px; border-radius:50%; border:4px solid var(--amarillo); 
             object-fit:cover; background: white; cursor: pointer;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: var(--transition);
         }
         #store-logo:hover { transform: scale(1.05); }
 
-        /* Buscador Moderno */
-        .search-container { padding: 25px 8%; background: white; margin-bottom: 20px; box-shadow: var(--shadow-soft); }
+        .search-container { padding: 20px 8%; background: white; margin-bottom: 15px; box-shadow: var(--shadow-soft); }
         #search-input { 
-            width: 100%; padding: 15px 25px; border: 2px solid #eee; border-radius: 50px; 
+            width: 100%; padding: 12px 20px; border: 2px solid #eee; border-radius: 50px; 
             font-size: 1rem; transition: var(--transition); outline: none;
         }
         #search-input:focus { border-color: var(--verde-claro); box-shadow: 0 0 15px rgba(45, 106, 79, 0.1); }
 
-        /* Grid y Cards Premium */
-        .container { padding: 20px 5%; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
+        .container { padding: 15px 5%; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
         .card { 
-            background: white; border-radius: 25px; overflow: hidden; 
+            background: white; border-radius: 20px; overflow: hidden; 
             box-shadow: var(--shadow-soft); position: relative; text-align: center; 
             border: 1px solid rgba(0,0,0,0.03); transition: var(--transition);
-            display: flex; flex-direction: column;
+            display: flex; flex-direction: column; will-change: transform;
         }
-        .card:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
-        .card img.card-img { width: 100%; height: 220px; object-fit: cover; transition: 0.5s; cursor: pointer; }
-        .card:hover img.card-img { transform: scale(1.05); }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.08); }
+        .card img.card-img { width: 100%; height: 200px; object-fit: cover; cursor: pointer; }
         
         .badge-agotado { 
-            position: absolute; top: 15px; right: 15px; background: var(--rojo); 
-            color: white; padding: 6px 12px; border-radius: 12px; font-size: 0.75rem; 
+            position: absolute; top: 12px; right: 12px; background: var(--rojo); 
+            color: white; padding: 5px 10px; border-radius: 10px; font-size: 0.7rem; 
             font-weight: 800; z-index: 5; box-shadow: 0 4px 10px rgba(230, 57, 70, 0.3);
         }
 
-        /* Botones Estilizados */
-        button { padding: 12px 25px; border: none; border-radius: 50px; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        button { padding: 10px 20px; border: none; border-radius: 50px; font-weight: 700; cursor: pointer; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-y { background: var(--amarillo); color: var(--oscuro); box-shadow: 0 4px 15px rgba(255, 202, 58, 0.2); }
-        .btn-y:hover { background: #f9bc15; transform: scale(1.05); }
+        .btn-y:hover { background: #f9bc15; transform: scale(1.03); }
         .btn-v { background: var(--verde-claro); color: white; box-shadow: 0 4px 15px rgba(45, 106, 79, 0.2); }
-        .btn-v:hover { background: var(--verde); transform: scale(1.05); }
+        .btn-v:hover { background: var(--verde); transform: scale(1.03); }
 
-        /* Sidebars Glassmorphism */
         .sidebar { 
             position: fixed; top: 0; right: -100%; width: 380px; max-width: 95%; height: 100%; 
-            background: var(--glass); backdrop-filter: blur(15px); z-index: 5000; 
-            transition: 0.6s cubic-bezier(0.7, 0, 0.3, 1); padding: 30px; 
+            background: var(--glass); backdrop-filter: blur(12px); z-index: 5000; 
+            transition: 0.5s cubic-bezier(0.7, 0, 0.3, 1); padding: 25px; 
             box-shadow: -15px 0 35px rgba(0,0,0,0.15); overflow-y: auto;
         }
         .sidebar.active { right: 0; }
-        .sidebar input { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 0.95rem; outline: none; transition: var(--transition); }
-        .sidebar input:focus { border-color: var(--verde); box-shadow: 0 0 8px rgba(27, 67, 50, 0.2); }
+        .sidebar input { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 0.95rem; outline: none; }
         .sidebar label { display: block; font-size: 0.85rem; font-weight: 700; margin-bottom: 5px; color: var(--oscuro); }
 
-        /* Modal de Detalles del Producto */
         .modal-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0,0,0,0.6); z-index: 6000; justify-content: center; align-items: center; 
-            backdrop-filter: blur(5px); animation: fadeIn 0.3s ease;
+            backdrop-filter: blur(4px);
         }
         .modal-content { 
-            background: white; padding: 35px; border-radius: 25px; width: 90%; max-width: 900px; 
-            max-height: 90vh; overflow-y: auto; display: flex; gap: 30px; position: relative; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            background: white; padding: 30px; border-radius: 20px; width: 90%; max-width: 850px; 
+            max-height: 85vh; overflow-y: auto; display: flex; gap: 25px; position: relative; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
-        .close-modal { position: absolute; top: 20px; right: 20px; background: none; border: none; font-size: 2rem; color: #888; cursor: pointer; padding: 0; line-height: 1; }
-        .close-modal:hover { color: var(--rojo); }
+        .close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.8rem; color: #888; cursor: pointer; }
         
-        .modal-gallery { flex: 1.2; display: flex; flex-direction: column; gap: 15px; }
-        .modal-main-img { width: 100%; height: 350px; object-fit: cover; border-radius: 15px; box-shadow: var(--shadow-soft); }
-        .modal-thumbs { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: center; }
+        .modal-gallery { flex: 1.2; display: flex; flex-direction: column; gap: 12px; }
+        .modal-main-img { width: 100%; height: 300px; object-fit: cover; border-radius: 12px; }
+        .modal-thumbs { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 5px; align-items: center; }
         
         .modal-thumb-wrap { position: relative; flex-shrink: 0; }
-        .modal-thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: var(--transition); display: block; }
-        .modal-thumbs img:hover, .modal-thumbs img.active { border-color: var(--verde); opacity: 1; transform: scale(1.05); }
+        .modal-thumbs img { width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; }
+        .modal-thumbs img.active { border-color: var(--verde); opacity: 1; }
         
         .modal-thumb-del {
-            position: absolute; top: -6px; right: -6px;
+            position: absolute; top: -5px; right: -5px;
             background: var(--rojo); color: white; border: none;
-            border-radius: 50%; width: 22px; height: 22px;
-            font-size: 11px; cursor: pointer; display: flex;
+            border-radius: 50%; width: 20px; height: 20px;
+            font-size: 10px; cursor: pointer; display: flex;
             align-items: center; justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3); transition: var(--transition);
-            z-index: 10;
         }
-        .modal-thumb-del:hover { transform: scale(1.15); background: #c5222f; }
 
         .modal-thumb-add {
-            width: 70px; height: 70px; border-radius: 10px; cursor: pointer;
+            width: 60px; height: 60px; border-radius: 8px; cursor: pointer;
             border: 2px dashed var(--verde); display: flex; align-items: center;
-            justify-content: center; font-size: 1.8rem; color: var(--verde);
-            background: #fff; transition: var(--transition); flex-shrink: 0;
+            justify-content: center; font-size: 1.5rem; color: var(--verde);
+            background: #fff; flex-shrink: 0;
         }
-        .modal-thumb-add:hover { background: var(--verde); color: white; transform: scale(1.05); }
 
         .modal-details { flex: 1; display: flex; flex-direction: column; }
-        .modal-details h2 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--oscuro); margin-bottom: 10px; }
-        .modal-details h3 { color: var(--verde-claro); font-size: 1.8rem; margin-bottom: 20px; font-weight: 800; }
-        .modal-section { margin-bottom: 20px; background: #f9f9f9; padding: 15px; border-radius: 12px; }
-        .modal-section h4 { font-size: 1rem; color: var(--oscuro); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
-        .modal-section p { color: #555; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap; }
-        .editable-field { padding: 5px; border-radius: 5px; transition: 0.3s; }
+        .modal-details h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--oscuro); margin-bottom: 8px; }
+        .modal-details h3 { color: var(--verde-claro); font-size: 1.5rem; margin-bottom: 15px; font-weight: 800; }
+        .modal-section { margin-bottom: 15px; background: #f9f9f9; padding: 12px; border-radius: 10px; }
+        .modal-section h4 { font-size: 0.95rem; color: var(--oscuro); margin-bottom: 6px; }
+        .modal-section p { color: #555; font-size: 0.9rem; line-height: 1.4; white-space: pre-wrap; }
+        .editable-field { padding: 4px; border-radius: 4px; }
         .editable-field[contenteditable="true"] { background: white; border: 1px dashed var(--amarillo); outline: none; }
 
         @media (max-width: 768px) {
-            .modal-content { flex-direction: column; padding: 25px; }
-            .modal-main-img { height: 250px; }
+            .modal-content { flex-direction: column; padding: 20px; gap: 15px; }
+            .modal-main-img { height: 220px; }
+            header { padding: 50px 15px; }
         }
 
-        /* Footer Admin */
         .admin-footer { 
             position: fixed; bottom: 0; left: 0; width: 100%; background: var(--oscuro); 
-            padding: 20px; display: none; justify-content: center; gap: 15px; z-index: 4000; 
-            border-top: 4px solid var(--amarillo); flex-wrap: wrap; animation: slideUp 0.5s ease;
+            padding: 15px; display: none; justify-content: center; gap: 12px; z-index: 4000; 
+            border-top: 3px solid var(--amarillo); flex-wrap: wrap;
         }
         body.admin-mode .admin-footer { display: flex; }
-
-        #diag-panel { display: none; background: white; border-radius: 20px; padding: 25px; margin-top: 30px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); border: 1px solid #eee; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        #diag-panel { display: none; background: white; border-radius: 15px; padding: 20px; margin-top: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
     </style>
 </head>
 <body id="main-body">
 
     <nav>
         <div class="nav-logo" id="nav-title" onblur="if(isBoss) saveChanges()">ESPINAS BELLAS</div>
-        <div style="display:flex; gap:12px;">
+        <div style="display:flex; gap:10px;">
             <button class="btn-y" onclick="openSidebar('cart-sidebar')">🛒 <span id="cart-count">0</span></button>
             <button class="btn-y" onclick="openSidebar('user-sidebar')">👤 Perfil</button>
         </div>
@@ -191,9 +171,9 @@
     <header id="dynamic-header" onclick="if(isBoss) editBackground()">
         <div class="header-overlay"></div>
         <div class="header-content">
-            <img src="https://dummyimage.com/150x150/ffffff/1b4332.png&text=Logo" id="store-logo" title="Clic para cambiar logo" onclick="event.stopPropagation(); if(isBoss) editLogo()">
-            <h1 id="store-name" style="font-family: 'Playfair Display', serif; font-size: 3rem; margin-top: 15px;" onblur="if(isBoss) saveChanges()">Cargando...</h1>
-            <p id="store-slogan" style="font-size: 1.2rem; opacity: 0.9;" onblur="if(isBoss) saveChanges()">Calidad y Frescura garantizada</p>
+            <img src="https://dummyimage.com/130x130/ffffff/1b4332.png&text=Logo" id="store-logo" title="Clic para cambiar logo" onclick="event.stopPropagation(); if(isBoss) editLogo()" alt="Logo Tienda">
+            <h1 id="store-name" style="font-family: 'Playfair Display', serif; font-size: 2.4rem; margin-top: 10px;" onblur="if(isBoss) saveChanges()">Cargando...</h1>
+            <p id="store-slogan" style="font-size: 1.05rem; opacity: 0.9;" onblur="if(isBoss) saveChanges()">Calidad y Frescura garantizada</p>
         </div>
     </header>
 
@@ -201,19 +181,19 @@
         <div class="grid" id="product-grid"></div>
 
         <div id="diag-panel">
-            <h3 style="color:var(--verde); margin-bottom:15px; display:flex; align-items:center; gap:10px;">🛠️ Análisis de Salud del Sistema</h3>
-            <div id="diag-results" style="line-height: 1.8; color: #555;"></div>
-            <button class="btn-v" onclick="document.getElementById('diag-panel').style.display='none'" style="width:100%; margin-top:20px;">Finalizar Revisión</button>
+            <h3 style="color:var(--verde); margin-bottom:12px;">🛠️ Análisis de Salud del Sistema</h3>
+            <div id="diag-results" style="line-height: 1.6; color: #555; font-size: 0.95rem;"></div>
+            <button class="btn-v" onclick="document.getElementById('diag-panel').style.display='none'" style="width:100%; margin-top:15px;">Finalizar Revisión</button>
         </div>
     </section>
 
-    <!-- Modal de Vista Detallada de Producto -->
+    <!-- Modal de Detalles del Producto -->
     <div id="product-modal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="close-modal" onclick="closeModal(true)">&times;</button>
             
             <div class="modal-gallery">
-                <img id="modal-main-img" class="modal-main-img" src="" alt="Vista previa de producto">
+                <img id="modal-main-img" class="modal-main-img" src="" alt="Imagen principal">
                 <div id="modal-thumbs" class="modal-thumbs"></div>
                 <input type="file" id="local-file-input" style="display:none" accept="image/*" onchange="handleLocalFileSelect(event)">
             </div>
@@ -228,29 +208,29 @@
                 </div>
                 
                 <div class="modal-section">
-                    <h4>✨ Características (Color, Material, etc.):</h4>
+                    <h4>✨ Características:</h4>
                     <p id="modal-features" class="editable-field"></p>
                 </div>
 
-                <div id="modal-stock-container" style="display:none; margin-bottom:15px; background: #fff3cd; padding:10px; border-radius:8px; border: 1px solid #ffe69c;">
-                    <label style="font-weight:bold; color:#856404;">📦 Stock Actual:</label>
-                    <input type="number" id="modal-stock" style="width:80px; padding:5px; margin-left:10px; border:1px solid #ccc; border-radius:5px;">
+                <div id="modal-stock-container" style="display:none; margin-bottom:12px; background: #fff3cd; padding:8px; border-radius:8px; border: 1px solid #ffe69c;">
+                    <label style="font-weight:bold; color:#856404; font-size:0.85rem;">📦 Stock Actual:</label>
+                    <input type="number" id="modal-stock" style="width:70px; padding:4px; margin-left:8px; border:1px solid #ccc; border-radius:4px;">
                 </div>
 
-                <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px;">
-                    <button id="modal-add-cart" class="btn-v" style="padding: 18px; font-size:1.1rem; width:100%;">🛒 Añadir al Carrito</button>
-                    <button id="modal-save-btn" class="btn-y" style="display:none; width:100%; background:var(--oscuro); color:white;" onclick="saveModalChanges()">💾 Guardar Cambios del Producto</button>
+                <div style="margin-top:auto; display:flex; flex-direction:column; gap:8px;">
+                    <button id="modal-add-cart" class="btn-v" style="padding: 14px; font-size:1rem; width:100%;">🛒 Añadir al Carrito</button>
+                    <button id="modal-save-btn" class="btn-y" style="display:none; width:100%; background:var(--oscuro); color:white;" onclick="saveModalChanges()">💾 Guardar Cambios</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Sidebar de Perfil y Admin Oculto -->
+    <!-- Sidebar de Perfil y Admin -->
     <aside class="sidebar" id="user-sidebar">
-        <button class="btn-y" onclick="closeSidebars()" style="margin-bottom:30px;">← Volver</button>
+        <button class="btn-y" onclick="closeSidebars()" style="margin-bottom:20px;">← Volver</button>
         
         <div id="auth-section">
-            <h2 id="auth-status" style="margin-bottom:20px;">Inicia Sesión</h2>
+            <h2 id="auth-status" style="margin-bottom:15px; font-size: 1.5rem;">Inicia Sesión</h2>
             
             <div id="login-view">
                 <input type="email" id="login-email" placeholder="Correo Electrónico o ID">
@@ -264,19 +244,19 @@
                 <input type="email" id="reg-email" placeholder="Correo">
                 <input type="password" id="reg-pass" placeholder="Contraseña">
                 <button class="btn-v" style="width:100%;" onclick="signUp()">Registrarme</button>
-                <button onclick="switchAuth(false)" style="background:none; color:var(--verde); width:100%; margin-top:10px; font-size:0.85rem; font-weight: bold; border:none; cursor:pointer;">Ya tengo una cuenta registrada</button>
+                <button onclick="switchAuth(false)" style="background:none; color:var(--verde); width:100%; margin-top:10px; font-size:0.85rem; font-weight: bold; border:none; cursor:pointer;">Ya tengo una cuenta</button>
             </div>
             
-            <button id="logout-btn" class="btn-v" style="background:var(--rojo); display:none; width:100%; margin-top:20px;" onclick="signOut()">Cerrar Mi Sesión</button>
+            <button id="logout-btn" class="btn-v" style="background:var(--rojo); display:none; width:100%; margin-top:15px;" onclick="signOut()">Cerrar Mi Sesión</button>
         </div>
 
-        <div id="admin-settings-ui" style="display:none; margin-top:30px; border-top:2px solid #ddd; padding-top:25px;">
-            <h3 style="color:var(--verde); margin-bottom:20px; font-size: 1.4rem;">⚙️ Panel de Control</h3>
-            <div><label>WhatsApp (con código de país):</label><input type="text" id="edit-wa" placeholder="Ej: 57321..."></div>
-            <div><label>Nueva ID / Correo de Acceso:</label><input type="text" id="edit-boss-id"></div>
-            <div><label>Nueva Clave de Acceso:</label><input type="password" id="edit-boss-pass"></div>
-            <div style="margin-top: 10px;">
-                <label style="color: var(--rojo);">Confirma clave actual para guardar:</label>
+        <div id="admin-settings-ui" style="display:none; margin-top:25px; border-top:2px solid #ddd; padding-top:20px;">
+            <h3 style="color:var(--verde); margin-bottom:15px; font-size: 1.2rem;">⚙️ Panel de Control</h3>
+            <div><label>WhatsApp:</label><input type="text" id="edit-wa" placeholder="Ej: 57321..."></div>
+            <div><label>Nueva ID / Correo:</label><input type="text" id="edit-boss-id"></div>
+            <div><label>Nueva Clave:</label><input type="password" id="edit-boss-pass"></div>
+            <div style="margin-top: 8px;">
+                <label style="color: var(--rojo);">Confirma clave actual:</label>
                 <input type="password" id="confirm-old-pass" placeholder="Clave actual" style="border: 2px solid var(--amarillo);">
             </div>
             <button class="btn-v" style="width:100%; background:var(--oscuro); margin-top: 10px;" onclick="updateAdminCreds()">Aplicar Cambios</button>
@@ -286,24 +266,24 @@
     <!-- Sidebar de Carrito -->
     <aside class="sidebar" id="cart-sidebar">
         <button class="btn-y" onclick="closeSidebars()">← Volver</button>
-        <h2 style="margin:25px 0 15px;">Tu Pedido Actual</h2>
-        <div id="cart-items-list" style="max-height: 50vh; overflow-y: auto;"></div>
-        <div style="padding-top: 20px; border-top: 2px solid #eee; margin-top: 20px;">
-            <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.6rem;">
+        <h2 style="margin:20px 0 15px; font-size: 1.4rem;">Tu Pedido Actual</h2>
+        <div id="cart-items-list" style="max-height: 45vh; overflow-y: auto;"></div>
+        <div style="padding-top: 15px; border-top: 2px solid #eee; margin-top: 15px;">
+            <div style="display:flex; justify-content:space-between; font-weight:800; font-size:1.4rem;">
                 <span>Total:</span><span id="cart-total">$0</span>
             </div>
-            <button class="btn-v" style="width:100%; margin-top:25px; padding: 18px;" onclick="checkout()">🚀 FINALIZAR EN WHATSAPP</button>
+            <button class="btn-v" style="width:100%; margin-top:20px; padding: 15px;" onclick="checkout()">🚀 FINALIZAR EN WHATSAPP</button>
         </div>
     </aside>
 
     <footer class="admin-footer">
-        <button class="btn-y" onclick="runDiagnostics()">🔍 Análisis Profundo</button>
+        <button class="btn-y" onclick="runDiagnostics()">🔍 Diagnóstico</button>
         <button class="btn-v" onclick="addProduct()">✨ Nuevo Producto</button>
-        <button class="btn-y" onclick="saveChanges()">💾 GUARDAR CUADRÍCULA</button>
+        <button class="btn-y" onclick="saveChanges()">💾 GUARDAR CAMBIOS</button>
         <button class="btn-v" style="background:var(--rojo);" onclick="exitBossMode()">Cerrar Edición</button>
     </footer>
 
-    <!-- SCRIPT OPTIMIZADO -->
+    <!-- SCRIPT ULTRA OPTIMIZADO -->
     <script>
         let isBoss = false;
         let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
@@ -329,38 +309,46 @@
             closeSidebars(); renderProducts();
         }
 
+        // Renderizado optimizado mediante DocumentFragment para evitar bloqueos en móviles
         function renderProducts() {
             const grid = document.getElementById('product-grid');
             if(!grid) return;
             
-            let htmlContent = "";
+            const fragment = document.createDocumentFragment();
+            grid.innerHTML = ""; // Limpieza rápida
+
             for(let k in allProductsData) {
                 const p = allProductsData[k];
                 const stock = p.stock || 0;
                 const mainImg = (p.imagenes && p.imagenes.length > 0) ? p.imagenes[0] : (p.imagen || "https://dummyimage.com/400x300/f0f2f5/081c15.png&text=Sin+Imagen");
 
-                htmlContent += `
-                    <div class="card" data-key="${k}" data-name="${(p.nombre||'').toLowerCase()}">
-                        ${stock <= 0 ? '<div class="badge-agotado">AGOTADO</div>' : ''}
-                        <img src="${mainImg}" class="card-img" loading="lazy" onclick="openProductModal('${k}')" title="Clic para ver detalles" alt="${p.nombre || 'Producto'}">
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.dataset.key = k;
+                cardDiv.dataset.name = (p.nombre || '').toLowerCase();
+
+                cardDiv.innerHTML = `
+                    ${stock <= 0 ? '<div class="badge-agotado">AGOTADO</div>' : ''}
+                    <img src="${mainImg}" class="card-img" loading="lazy" onclick="openProductModal('${k}')" title="Clic para ver detalles" alt="${p.nombre || 'Producto'}">
+                    
+                    <div style="padding:15px; flex-grow: 1; display: flex; flex-direction: column;">
+                        <h3 class="e-n" contenteditable="${isBoss}" style="font-size:1.1rem;">${p.nombre || 'Producto'}</h3>
+                        <p class="e-p" contenteditable="${isBoss}" style="color:var(--verde-claro); font-weight:800; font-size:1.1rem; margin: 8px 0;">${p.precio || '$0'}</p>
+                        ${isBoss ? `<div style="font-size:0.8rem; color:#888;">Stock: <input type="number" class="e-s" value="${stock}" style="width:55px; padding:3px;"></div>` : ''}
                         
-                        <div style="padding:20px; flex-grow: 1; display: flex; flex-direction: column;">
-                            <h3 class="e-n" contenteditable="${isBoss}">${p.nombre || 'Producto'}</h3>
-                            <p class="e-p" contenteditable="${isBoss}" style="color:var(--verde-claro); font-weight:800; font-size:1.2rem; margin: 10px 0;">${p.precio || '$0'}</p>
-                            ${isBoss ? `<div style="font-size:0.8rem; color:#888;">Stock: <input type="number" class="e-s" value="${stock}" style="width:60px; padding:4px;"></div>` : ''}
-                            
-                            <div style="display: flex; gap: 10px; margin-top: auto; padding-top: 15px;">
-                                <button class="btn-y" style="flex:1; font-size: 0.9rem;" onclick="openProductModal('${k}')">👁️ Detalles</button>
-                                <button class="btn-v" style="flex:1; font-size: 0.9rem;" onclick="addToCart('${k}')" ${stock <= 0 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
-                                    ${stock <= 0 ? 'Agotado' : '🛒 Añadir'}
-                                </button>
-                            </div>
-                            
-                            ${isBoss ? `<p onclick="del('${k}')" style="color:red; cursor:pointer; font-size:0.75rem; margin-top:15px; font-weight:bold; letter-spacing:1px;">🗑️ ELIMINAR</p>` : ''}
+                        <div style="display: flex; gap: 8px; margin-top: auto; padding-top: 10px;">
+                            <button class="btn-y" style="flex:1; font-size: 0.85rem; padding: 8px;" onclick="openProductModal('${k}')">👁️ Detalles</button>
+                            <button class="btn-v" style="flex:1; font-size: 0.85rem; padding: 8px;" onclick="addToCart('${k}')" ${stock <= 0 ? 'disabled style="opacity:0.5; cursor:not-allowed;"' : ''}>
+                                ${stock <= 0 ? 'Agotado' : '🛒 Añadir'}
+                            </button>
                         </div>
+                        
+                        ${isBoss ? `<p onclick="del('${k}')" style="color:red; cursor:pointer; font-size:0.75rem; margin-top:12px; font-weight:bold;">🗑️ ELIMINAR</p>` : ''}
                     </div>`;
+                
+                fragment.appendChild(cardDiv);
             }
-            grid.innerHTML = htmlContent;
+            grid.appendChild(fragment);
         }
 
         function openProductModal(k) {
@@ -376,20 +364,19 @@
                 thumbHTML += `
                     <div class="modal-thumb-wrap">
                         <img src="${img}" class="${idx === 0 ? 'active' : ''}" loading="lazy" onclick="changeModalMainImg(this, '${img}')" alt="Miniatura">
-                        ${isBoss ? `<button class="modal-thumb-del" onclick="event.stopPropagation(); deleteModalImage(${idx})" title="Eliminar imagen">🗑️</button>` : ''}
+                        ${isBoss ? `<button class="modal-thumb-del" onclick="event.stopPropagation(); deleteModalImage(${idx})">🗑️</button>` : ''}
                     </div>`;
             });
 
             if (isBoss) {
-                thumbHTML += `<div class="modal-thumb-add" onclick="promptAddImage()" title="Añadir nueva imagen">+</div>`;
+                thumbHTML += `<div class="modal-thumb-add" onclick="promptAddImage()">+</div>`;
             }
 
             document.getElementById('modal-thumbs').innerHTML = thumbHTML;
-
             document.getElementById('modal-title').innerText = p.nombre || "Producto sin nombre";
             document.getElementById('modal-price').innerText = p.precio || "$0";
-            document.getElementById('modal-desc').innerText = p.descripcion || "No hay una descripción detallada para este producto todavía.";
-            document.getElementById('modal-features').innerText = p.caracteristicas || "Características no especificadas.";
+            document.getElementById('modal-desc').innerText = p.descripcion || "Sin descripción detallada.";
+            document.getElementById('modal-features').innerText = p.caracteristicas || "Sin características.";
 
             const btnCart = document.getElementById('modal-add-cart');
             btnCart.onclick = () => { addToCart(k); };
@@ -405,22 +392,18 @@
             
             document.getElementById('modal-stock-container').style.display = isBoss ? 'flex' : 'none';
             if(isBoss) document.getElementById('modal-stock').value = stock;
-            
             document.getElementById('modal-save-btn').style.display = isBoss ? 'block' : 'none';
-
             document.getElementById('product-modal').style.display = 'flex';
         }
 
         function promptAddImage() {
             if (!isBoss || !currentModalKey) return;
-            const opcion = confirm("¿Cómo deseas agregar la nueva imagen?\n\n• Aceptar: Buscar imagen en los archivos de tu computador.\n• Cancelar: Escribir o pegar una URL de internet.");
+            const opcion = confirm("¿Cómo deseas agregar la nueva imagen?\n\n• Aceptar: Buscar archivo local.\n• Cancelar: Pegar URL de internet.");
             if (opcion) {
                 document.getElementById('local-file-input').click();
             } else {
                 const url = prompt("Ingresa la URL de la imagen:");
-                if (url && url.trim() !== "") {
-                    saveNewImageToProduct(url.trim());
-                }
+                if (url && url.trim() !== "") saveNewImageToProduct(url.trim());
             }
         }
 
@@ -428,10 +411,7 @@
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Image = e.target.result;
-                saveNewImageToProduct(base64Image);
-            };
+            reader.onload = function(e) { saveNewImageToProduct(e.target.result); };
             reader.readAsDataURL(file);
             event.target.value = '';
         }
@@ -441,7 +421,6 @@
             let p = allProductsData[currentModalKey];
             let imgs = p.imagenes ? [...p.imagenes] : (p.imagen ? [p.imagen] : []);
             imgs.push(imgSrc);
-
             db.ref(`productos/${currentModalKey}/imagenes`).set(imgs).then(() => {
                 db.ref(`productos/${currentModalKey}/imagen`).set(imgs[0]);
             });
@@ -451,13 +430,8 @@
             if (!isBoss || !currentModalKey || !db) return;
             let p = allProductsData[currentModalKey];
             let imgs = p.imagenes ? [...p.imagenes] : (p.imagen ? [p.imagen] : []);
-
-            if (imgs.length <= 1) {
-                alert("El producto debe tener al menos una imagen. No puedes eliminar la última.");
-                return;
-            }
-
-            if (confirm("¿Estás seguro de eliminar esta imagen?")) {
+            if (imgs.length <= 1) return alert("Debe tener al menos una imagen.");
+            if (confirm("¿Eliminar esta imagen?")) {
                 imgs.splice(index, 1);
                 db.ref(`productos/${currentModalKey}/imagenes`).set(imgs).then(() => {
                     db.ref(`productos/${currentModalKey}/imagen`).set(imgs[0]);
@@ -482,13 +456,9 @@
             const p = allProductsData[key], existing = cart.find(i => i.key === key);
             const currentStock = p.stock || 0;
             if(existing) {
-                if(existing.qty < currentStock) existing.qty++; else return alert("Lo sentimos, no hay más unidades disponibles.");
+                if(existing.qty < currentStock) existing.qty++; else return alert("No hay más unidades disponibles.");
             } else { cart.push({key, name: p.nombre, price: p.precio, qty: 1}); }
             updateCartUI();
-            
-            const btn = document.getElementById('cart-count');
-            btn.style.transform = 'scale(1.3)';
-            setTimeout(() => btn.style.transform = 'scale(1)', 300);
         }
 
         function updateCartQty(key, delta) {
@@ -509,12 +479,12 @@
                 const sub = pNum * item.qty;
                 total += sub; count += item.qty;
                 list.innerHTML += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; background:white; padding:15px; border-radius:15px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
-                        <div><b style="font-size:1.1rem;">${item.name}</b><br><small style="color:var(--verde-claro); font-weight:700;">$${sub.toLocaleString()}</small></div>
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <button style="padding: 5px 10px;" onclick="updateCartQty('${item.key}', -1)">-</button>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; background:white; padding:12px; border-radius:12px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                        <div><b style="font-size:1rem;">${item.name}</b><br><small style="color:var(--verde-claro); font-weight:700;">$${sub.toLocaleString()}</small></div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <button style="padding: 4px 8px;" onclick="updateCartQty('${item.key}', -1)">-</button>
                             <span style="font-weight:800;">${item.qty}</span>
-                            <button style="padding: 5px 10px;" onclick="updateCartQty('${item.key}', 1)">+</button>
+                            <button style="padding: 4px 8px;" onclick="updateCartQty('${item.key}', 1)">+</button>
                         </div>
                     </div>`;
             });
@@ -532,18 +502,18 @@
             document.querySelectorAll('.card').forEach(c => c.style.display = c.dataset.name.includes(q) ? 'flex' : 'none');
         }
 
-        // BLOQUE DE INICIALIZACIÓN DE FIREBASE OPTIMIZADO
+        // INICIALIZACIÓN FIREBASE SEGURA
         try {
-            if (typeof firebase === 'undefined') {
-                alert("⚠️ Advertencia: No se pudieron cargar los recursos de Firebase.");
-            } else {
+            if (typeof firebase !== 'undefined') {
                 const firebaseConfig = {
                     apiKey: "AIzaSyAOCuJ_tFSsKKqKXtgGvrrZgWDAPqt2uEk",
                     authDomain: "fruteria-las-espinas.firebaseapp.com",
                     databaseURL: "https://fruteria-las-espinas-default-rtdb.firebaseio.com",
                     projectId: "fruteria-las-espinas"
                 };
-                firebase.initializeApp(firebaseConfig);
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
                 db = firebase.database();
                 auth = firebase.auth();
 
@@ -555,14 +525,14 @@
                     up[`productos/${currentModalKey}/descripcion`] = document.getElementById('modal-desc').innerText;
                     up[`productos/${currentModalKey}/caracteristicas`] = document.getElementById('modal-features').innerText;
                     up[`productos/${currentModalKey}/stock`] = parseInt(document.getElementById('modal-stock').value) || 0;
-                    db.ref().update(up).then(() => { alert('¡Detalles del producto guardados exitosamente!'); });
+                    db.ref().update(up).then(() => { alert('¡Guardado exitoso!'); });
                 };
 
                 window.checkout = function() {
                     if(cart.length === 0) return alert("Tu carrito está vacío.");
                     let msg = `*🛒 NUEVO PEDIDO - ESPINAS BELLAS*\n---------------------------\n`;
                     cart.forEach(i => msg += `✅ ${i.qty}x ${i.name} (${i.price})\n`);
-                    msg += `---------------------------\n*💰 TOTAL A PAGAR: ${document.getElementById('cart-total').innerText}*`;
+                    msg += `---------------------------\n*💰 TOTAL: ${document.getElementById('cart-total').innerText}*`;
                     
                     const up = {};
                     cart.forEach(i => {
@@ -575,12 +545,13 @@
                     });
                 };
 
-                window.editBackground = function() { const url = prompt("Pegue URL de imagen de fondo:"); if(url) db.ref('config/background').set(url); };
-                window.editLogo = function() { const url = prompt("Pegue URL de nuevo logo:"); if(url) db.ref('config/logo').set(url); };
+                window.editBackground = function() { const url = prompt("URL de fondo:"); if(url) db.ref('config/background').set(url); };
+                window.editLogo = function() { const url = prompt("URL de nuevo logo:"); if(url) db.ref('config/logo').set(url); };
 
                 window.runDiagnostics = function() {
-                    const res = document.getElementById('diag-results'); document.getElementById('diag-panel').style.display = 'block';
-                    res.innerHTML = `🔹 <b>Firebase:</b> Conectado y Sincronizado.<br>🔹 <b>Catálogo:</b> ${Object.keys(allProductsData).length} productos.<br>🔹 <b>Módulo Modal:</b> Activo.<br>🔹 <b>WhatsApp:</b> +${bossCreds.wa}.`;
+                    const res = document.getElementById('diag-results'); 
+                    document.getElementById('diag-panel').style.display = 'block';
+                    res.innerHTML = `🔹 <b>Firebase:</b> Conectado.<br>🔹 <b>Catálogo:</b> ${Object.keys(allProductsData).length} productos.<br>🔹 <b>WhatsApp:</b> +${bossCreds.wa}.`;
                 };
 
                 window.saveChanges = function() {
@@ -594,18 +565,18 @@
                         up[`productos/${k}/precio`] = c.querySelector('.e-p').innerText;
                         if(isBoss) up[`productos/${k}/stock`] = parseInt(c.querySelector('.e-s').value || 0);
                     });
-                    db.ref().update(up).then(() => alert("Cuadrícula y textos de portada actualizados correctamente."));
+                    db.ref().update(up).then(() => alert("Actualizado correctamente."));
                 };
 
                 window.updateAdminCreds = function() {
                     const old = document.getElementById('confirm-old-pass').value;
-                    if(old !== bossCreds.pass) return alert("Error: La clave actual no coincide.");
+                    if(old !== bossCreds.pass) return alert("La clave actual no coincide.");
                     const newObj = {
                         id: document.getElementById('edit-boss-id').value || bossCreds.id,
                         pass: document.getElementById('edit-boss-pass').value || bossCreds.pass,
                         wa: document.getElementById('edit-wa').value || bossCreds.wa
                     };
-                    db.ref('config/admin').set(newObj).then(() => { alert("Credenciales actualizadas. La página se reiniciará."); location.reload(); });
+                    db.ref('config/admin').set(newObj).then(() => { alert("Credenciales actualizadas. Recargando..."); location.reload(); });
                 };
 
                 window.signUp = function() {
@@ -621,7 +592,7 @@
                         isBoss = true;
                         document.body.classList.add('admin-mode');
                         document.getElementById('admin-settings-ui').style.display = 'block';
-                        document.getElementById('auth-status').innerText = "Panel de Administrador";
+                        document.getElementById('auth-status').innerText = "Panel Admin";
                         document.getElementById('login-view').style.display = 'none';
                         document.getElementById('logout-btn').style.display = 'block';
                         document.getElementById('login-email').value = '';
@@ -631,7 +602,7 @@
                             if(el) el.contentEditable = true;
                         });
                         renderProducts();
-                        alert("Modo Edición Activado Exitosamente");
+                        alert("Modo Edición Activado");
                         return; 
                     }
                     auth.signInWithEmailAndPassword(e, p).catch(err => alert(err.message));
@@ -644,15 +615,15 @@
 
                 window.addProduct = function() { 
                     db.ref('productos').push({ 
-                        nombre: "Nuevo Producto", precio: "$0.000", stock: 10, 
+                        nombre: "Nuevo Producto", precio: "$0", stock: 10, 
                         imagen: "https://dummyimage.com/400x300/1b4332/ffca3a.png&text=Nueva+Imagen",
                         imagenes: ["https://dummyimage.com/400x300/1b4332/ffca3a.png&text=Nueva+Imagen"],
-                        descripcion: "Escribe aquí la descripción detallada del producto.",
-                        caracteristicas: "Color: N/A\nTamaño: N/A\nMaterial: N/A"
+                        descripcion: "Descripción detallada del producto.",
+                        caracteristicas: "Color: N/A\nTamaño: N/A"
                     }); 
                 };
 
-                window.del = function(k) { if(confirm("¿Seguro que desea eliminar este producto?")) db.ref('productos/'+k).remove(); };
+                window.del = function(k) { if(confirm("¿Eliminar este producto?")) db.ref('productos/'+k).remove(); };
                 
                 db.ref('productos').on('value', snap => { 
                     allProductsData = snap.val() || {}; 
@@ -694,7 +665,7 @@
                 });
             }
         } catch (e) {
-            console.error("Fallo al inicializar la base de datos:", e);
+            console.error("Error al inicializar Firebase:", e);
         }
     </script>
 </body>
