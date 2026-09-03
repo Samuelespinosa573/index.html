@@ -390,8 +390,9 @@
         "use strict";
 
         const DB_ROOT = "https://fruteria-las-espinas-default-rtdb.firebaseio.com";
-        const CACHE_PRODUCTS_META = "espinas_bellas_products_meta_v4";
-        const CACHE_CONFIG = "espinas_bellas_config_v4";
+        const CACHE_PRODUCTS_META = "espinas_bellas_products_meta_v5";
+        const CACHE_CATALOG_SNAPSHOT = "espinas_bellas_catalog_snapshot_v5";
+        const CACHE_CONFIG = "espinas_bellas_config_v5";
         const CACHE_CART = "espinas_bellas_cart_v4";
         const CACHE_ORDER = "espinas_bellas_order_v2";
         const CACHE_TTL = 1000 * 60 * 60 * 24 * 30;
@@ -416,10 +417,9 @@
         let imageObserver = null;
         let catalogReady = false;
         let catalogLoading = true;
-        let pendingCatalogKeys = [];
         let catalogFetchGeneration = 0;
         let cacheDBPromise = null;
-        const cachedAssetSources = { logo: '', background: '' };
+        let refreshPromise = null;
 
         const $ = id => document.getElementById(id);
 
@@ -456,15 +456,17 @@
             if (cacheDBPromise) return cacheDBPromise;
             cacheDBPromise = new Promise((resolve, reject) => {
                 if (!window.indexedDB) return reject(new Error("IndexedDB no disponible"));
-                const req = indexedDB.open("espinas_bellas_cache", 3);
+                const req = indexedDB.open("espinas_bellas_cache", 4);
                 req.onupgradeneeded = () => {
                     const idb = req.result;
                     if (!idb.objectStoreNames.contains("store")) idb.createObjectStore("store");
                     if (!idb.objectStoreNames.contains("products")) idb.createObjectStore("products");
                     if (!idb.objectStoreNames.contains("assets")) idb.createObjectStore("assets");
+                    if (!idb.objectStoreNames.contains("catalog")) idb.createObjectStore("catalog");
                 };
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => reject(req.error || new Error("IndexedDB error"));
+                req.onblocked = () => {};
+                req.onsuccess = () => { const db=req.result; db.onversionchange=()=>db.close(); resolve(db); };
+                req.onerror = () => { cacheDBPromise=null; reject(req.error || new Error("IndexedDB error")); };
             });
             return cacheDBPromise;
         }
@@ -490,41 +492,20 @@
                 });
             } catch (_) {}
         }
-        async function idbGetProductKeys() {
+        async function idbGetAllProducts() {
             try {
                 const idb = await openCacheDB();
                 return await new Promise((resolve, reject) => {
                     const tx = idb.transaction("products", "readonly");
-                    const req = tx.objectStore("products").getAllKeys();
-                    req.onsuccess = () => resolve(req.result || []);
+                    const req = tx.objectStore("products").getAll();
+                    req.onsuccess = () => {
+                        const out = {};
+                        for (const row of (req.result || [])) if (row && row.key) out[row.key] = row.data || {};
+                        resolve(out);
+                    };
                     req.onerror = () => reject(req.error);
                 });
-            } catch (_) { return []; }
-        }
-        async function idbGetProductsByKeys(keys) {
-            if (!Array.isArray(keys) || !keys.length) return {};
-            try {
-                const idb = await openCacheDB();
-                return await new Promise((resolve, reject) => {
-                    const tx = idb.transaction("products", "readonly");
-                    const store = tx.objectStore("products");
-                    const out = {};
-                    let left = keys.length;
-                    for (const key of keys) {
-                        const req = store.get(key);
-                        req.onsuccess = () => {
-                            const row = req.result;
-                            if (row && row.key) out[row.key] = row.data || {};
-                            if (--left === 0) resolve(out);
-                        };
-                        req.onerror = () => { if (--left === 0) resolve(out); };
-                    }
-                });
             } catch (_) { return {}; }
-        }
-        async function idbGetAllProducts() {
-            const keys = await idbGetProductKeys();
-            return idbGetProductsByKeys(keys);
         }
         async function idbPutProducts(products) {
             const entries = Object.entries(products || {});
@@ -578,7 +559,6 @@
         }
 
         function loadLocalState() {
-            const cachedMeta = readCache(CACHE_PRODUCTS_META);
             const cachedConfig = readCache(CACHE_CONFIG);
             if (cachedConfig && typeof cachedConfig === "object") applyConfig(cachedConfig);
             try {
@@ -596,10 +576,10 @@
                 }
             } catch (_) {}
             updateCartUI();
-            // La caché ligera solo es una red de seguridad; la caché completa de IDB manda.
-            if (cachedMeta && typeof cachedMeta === "object" && Object.keys(cachedMeta).length) {
-                allProductsData = cachedMeta;
-            }
+            // IMPORTANTE: no usamos la caché de metadatos para pintar productos.
+            // Esa caché no contiene las imágenes completas y provocaba el placeholder
+            // durante segundos/minutos después de F5. El catálogo visible solo sale
+            // de un snapshot completo de IndexedDB o de Firebase REST.
         }
 
         function buildMetadataCache(products) {
@@ -695,6 +675,12 @@
                 img.loading = 'eager';
                 img.fetchPriority = 'high';
                 img.src = src || PLACEHOLDER;
+            } else if (src && src.startsWith('data:')) {
+                // Data URLs ya están en memoria; pasarlas por IntersectionObserver
+                // solo añade latencia innecesaria.
+                img.loading = 'eager';
+                img.fetchPriority = 'auto';
+                img.src = src;
             } else if ('IntersectionObserver' in window) {
                 img.loading = 'lazy';
                 img.fetchPriority = 'low';
@@ -723,7 +709,9 @@
                     <button class="btn-y" style="flex:1;font-size:.85rem;padding:8px;" onclick="openProductModal('${safeKey(k)}')">👁️ Detalles</button>
                     <button class="btn-v" style="flex:1;font-size:.85rem;padding:8px;${stock<=0?'opacity:.5;cursor:not-allowed;':''}" onclick="addToCart('${safeKey(k)}')" ${stock<=0?'disabled':''}>${stock<=0?'Agotado':'🛒 Añadir'}</button></div>${deleteButton}</div>`;
             const img = card.querySelector('[data-product-image]');
-            prepareImage(img, getProductImage(p), index < 4);
+            const imageSrc=getProductImage(p);
+            const eagerLimit=((window.innerWidth||800)<=768?6:8);
+            prepareImage(img,imageSrc,index<eagerLimit || imageSrc.startsWith('data:'));
             return card;
         }
 
@@ -792,8 +780,6 @@
         }
         async function cacheRemoteImage(key, src){
             if(!src || typeof src!=='string')return;
-            if(cachedAssetSources[key] === src)return;
-            cachedAssetSources[key] = src;
             try{
                 let res;
                 if(src.startsWith('data:')){const blob=dataURLToBlob(src);if(blob)await idbPutAsset(key,blob);return;}
@@ -810,79 +796,146 @@
             finally{clearTimeout(t);}
         }
 
-        async function hydrateIDBCache(){
-            // No cargamos todos los blobs de imagen en memoria de una sola vez.
-            // Primero salen los productos de la primera pantalla y luego el resto.
-            const keys=await idbGetProductKeys();
-            if(keys.length){
-                const firstBatch=await idbGetProductsByKeys(keys.slice(0,8));
-                if(Object.keys(firstBatch).length){
-                    Object.assign(allProductsData,firstBatch);
-                    catalogReady=true;catalogLoading=false;renderProducts();
-                }
-                for(let i=8;i<keys.length;i+=12){
-                    await new Promise(r=>requestAnimationFrame(r));
-                    const batch=await idbGetProductsByKeys(keys.slice(i,i+12));
-                    Object.assign(allProductsData,batch);
-                    if(Object.keys(batch).length) renderProducts();
-                }
-                return allProductsData;
-            }
-            // Compatibilidad con la versión anterior: recupera el catálogo completo
-            // que ya estaba guardado bajo products_full, incluidas sus imágenes base64.
-            const legacy=await idbGet('products_full');
-            if(legacy&&typeof legacy==='object'&&Object.keys(legacy).length){
-                allProductsData=legacy;
-                idbPutProducts(legacy);
-                catalogReady=true;catalogLoading=false;renderProducts();
-                return legacy;
-            }
-            return {};
-        }
-
-        async function fetchProductsProgressive(generation){
-            // 1) Primero pedimos SOLO las claves. Es una respuesta diminuta incluso si las fotos pesan mucho.
+        async function idbGetCatalogSnapshot(){
             try{
-                const keysMap=await fetchJSON('productos?shallow=true',4500);
-                if(generation!==catalogFetchGeneration)return false;
-                const keys=keysMap&&typeof keysMap==='object'?Object.keys(keysMap):[];
-                if(!keys.length){allProductsData={};catalogReady=true;catalogLoading=false;renderProducts();return true;}
-                pendingCatalogKeys=keys.slice();
-                const partial={};
-                const CONCURRENCY=4;
-                while(pendingCatalogKeys.length && generation===catalogFetchGeneration){
-                    const batch=pendingCatalogKeys.splice(0,CONCURRENCY);
-                    const results=await Promise.all(batch.map(async key=>{
-                        try{return [key,await fetchJSON(`productos/${encodeURIComponent(key)}`,7000)];}
-                        catch(_){return [key,null];}
-                    }));
-                    for(const [key,data] of results){if(data&&typeof data==='object'){partial[key]=data;allProductsData[key]=data;catalogReady=true;await idbPutProduct(key,data);}}
-                    if(Object.keys(partial).length){writeCache(CACHE_PRODUCTS_META,buildMetadataCache(allProductsData));renderProducts();}
-                    // Ceder el hilo entre tandas para que Android pueda pintar y responder.
-                    await new Promise(r=>requestAnimationFrame(()=>r()));
-                }
-                catalogLoading=false;
-                if(Object.keys(allProductsData).length){catalogReady=true;renderProducts();return true;}
-            }catch(err){console.warn('Catálogo progresivo no disponible:',err);}
-            return false;
+                const idb=await openCacheDB();
+                return await new Promise((resolve,reject)=>{
+                    const tx=idb.transaction("catalog","readonly");
+                    const req=tx.objectStore("catalog").get("latest");
+                    req.onsuccess=()=>resolve(req.result?.data||null);
+                    req.onerror=()=>reject(req.error);
+                });
+            }catch(_){return null;}
+        }
+        async function idbSetCatalogSnapshot(products){
+            try{
+                const idb=await openCacheDB();
+                await new Promise((resolve,reject)=>{
+                    const tx=idb.transaction("catalog","readwrite");
+                    tx.objectStore("catalog").put({data:products,time:Date.now()},"latest");
+                    tx.oncomplete=resolve;
+                    tx.onerror=()=>reject(tx.error);
+                });
+            }catch(_){}
         }
 
-        let refreshPromise=null;
+        function hasUsefulCatalogData(products){
+            if(!products || typeof products!=="object") return false;
+            return Object.values(products).some(p=>{
+                if(!p || typeof p!=="object") return false;
+                const name=String(p.nombre||'').trim();
+                const price=String(p.precio||'').trim();
+                const img=String((Array.isArray(p.imagenes)&&p.imagenes[0])||p.imagen||'').trim();
+                return !!(name || price || img);
+            });
+        }
+
+        function sanitizeCatalog(catalog){
+            if(!catalog || typeof catalog!=='object' || Array.isArray(catalog)) return {};
+            const out={};
+            for(const [rawKey,p0] of Object.entries(catalog)){
+                if(!rawKey || !p0 || typeof p0!=='object' || Array.isArray(p0)) continue;
+                const p={...p0};
+                const name=String(p.nombre??'').trim();
+                const price=String(p.precio??'').trim();
+                const images=Array.isArray(p.imagenes)?p.imagenes.filter(x=>typeof x==='string' && x.trim()).slice(0,8):[];
+                const image=typeof p.imagen==='string' && p.imagen.trim()?p.imagen.trim():'';
+                const desc=String(p.descripcion??'').trim();
+                const features=String(p.caracteristicas??'').trim();
+                const category=String(p.categoria??p.category??'').trim();
+                const hasStock=p.stock!==undefined && p.stock!==null && String(p.stock).trim()!=='';
+                // Un producto visible debe tener como mínimo un nombre. Esto evita tarjetas
+                // fantasma creadas por nodos vacíos/rotos en RTDB, sin borrar nada de la base.
+                if(!name) continue;
+                p.nombre=name;
+                p.precio=price || '$0';
+                p.descripcion=desc;
+                p.caracteristicas=features;
+                p.categoria=category || 'General';
+                p.imagenes=images.length ? images : (image ? [image] : []);
+                p.imagen=p.imagenes[0] || image || '';
+                p.stock=Number.isFinite(Number(p.stock)) ? Number(p.stock) : 0;
+                out[String(rawKey)]=p;
+            }
+            return out;
+        }
+
+        async function hydrateIDBCache(){
+            const full=await idbGetCatalogSnapshot();
+            if(!full || typeof full!=='object' || !full.data) return {};
+            const catalog=sanitizeCatalog(full.data);
+            if(!Object.keys(catalog).length) return {};
+            allProductsData=catalog;
+            catalogReady=true;
+            catalogLoading=false;
+            renderProducts();
+            return catalog;
+        }
+
+        async function fetchProductsCanonical(){
+            // La red actualiza en segundo plano; la interfaz nunca espera esta petición
+            // para mostrar una copia local ya válida.
+            const data=await fetchJSON('productos',12000,{cache:'no-store'});
+            const canonical=sanitizeCatalog(data);
+            allProductsData=canonical;
+            catalogReady=Object.keys(canonical).length>0;
+            catalogLoading=false;
+            renderProducts();
+
+            // Primero se dibuja; después se escribe la caché completa. Así una escritura
+            // grande en IndexedDB nunca bloquea el primer render del móvil.
+            writeCache(CACHE_PRODUCTS_META,buildMetadataCache(canonical));
+            setTimeout(()=>idbSetCatalogSnapshot(canonical),0);
+            return canonical;
+        }
+
+        let catalogRetryTimer=null;
+        let catalogRetryAttempt=0;
+        function scheduleCatalogRetry(){
+            clearTimeout(catalogRetryTimer);
+            const delays=[1000,2000,4000,8000,15000,30000];
+            const delay=delays[Math.min(catalogRetryAttempt,delays.length-1)];
+            catalogRetryAttempt=Math.min(catalogRetryAttempt+1,delays.length-1);
+            catalogRetryTimer=setTimeout(()=>fetchCatalogInBackground(),delay);
+        }
+        async function fetchCatalogInBackground(){
+            try{
+                await fetchProductsCanonical();
+                catalogRetryAttempt=0;
+                clearTimeout(catalogRetryTimer); catalogRetryTimer=null;
+            }catch(err){
+                console.warn('Actualización de catálogo aplazada:',err);
+                // Nunca reemplazar un catálogo ya visible por una pantalla de error.
+                if(Object.keys(allProductsData).length){
+                    catalogReady=true; catalogLoading=false;
+                    return;
+                }
+                setLoadingMessage('Conectando con el catálogo…');
+                scheduleCatalogRetry();
+            }
+        }
+
         async function refreshCatalog(force=false){
-            if(refreshPromise&&!force)return refreshPromise;
-            const generation=++catalogFetchGeneration;
+            if(refreshPromise && !force) return refreshPromise;
+            if(force){
+                clearTimeout(catalogRetryTimer); catalogRetryTimer=null;
+                catalogRetryAttempt=0;
+            }
             refreshPromise=(async()=>{
                 catalogLoading=true;
-                renderSkeletons();
-                // Caché completa e internet trabajan al mismo tiempo.
-                const idbPromise=hydrateIDBCache();
-                const configPromise=loadConfigFast();
-                const networkPromise=fetchProductsProgressive(generation);
-                await Promise.race([idbPromise,networkPromise]);
-                await Promise.allSettled([idbPromise,networkPromise,configPromise]);
-                if(generation!==catalogFetchGeneration)return;
-                if(Object.keys(allProductsData).length){catalogReady=true;catalogLoading=false;renderProducts();}
-                else {catalogLoading=false;setLoadingMessage('No hay conexión con el catálogo en este momento.',true);}
+
+                // 1) Pintar caché completa lo antes posible.
+                const cached=await hydrateIDBCache();
+                if(!Object.keys(cached).length) renderSkeletons(6);
+
+                // 2) Actualizar desde Firebase sin bloquear la copia que ya ve el cliente.
+                await Promise.allSettled([fetchCatalogInBackground(),loadConfigFast()]);
+
+                // Si tenemos caché y la red falla, conservar exactamente esa copia.
+                if(Object.keys(allProductsData).length){
+                    catalogReady=true; catalogLoading=false;
+                    if(!document.querySelector('.card')) renderProducts();
+                }
             })().finally(()=>{refreshPromise=null;});
             return refreshPromise;
         }
@@ -903,7 +956,20 @@
         }
         function startRealtimeListeners(){
             if(!db||realtimeListenersStarted)return;realtimeListenersStarted=true;
-            db.ref('productos').on('value',snap=>{const p=snap.val()||{};allProductsData=p;writeCache(CACHE_PRODUCTS_META,buildMetadataCache(p));idbPutProducts(p);catalogReady=true;catalogLoading=false;renderProducts();if(currentModalKey){if(allProductsData[currentModalKey])openProductModal(currentModalKey);else closeModal(true);}});
+            db.ref('productos').on('value',snap=>{
+                const raw=snap.val();
+                const p=sanitizeCatalog(raw||{});
+                // No permitir que una respuesta vacía/transitoria de red borre un
+                // catálogo válido que ya está visible en pantalla.
+                if(!Object.keys(p).length && Object.keys(allProductsData).length && raw!==null) return;
+                allProductsData=p;
+                writeCache(CACHE_PRODUCTS_META,buildMetadataCache(p));
+                setTimeout(()=>idbSetCatalogSnapshot(p),0);
+                catalogReady=Object.keys(p).length>0;
+                catalogLoading=false;
+                renderProducts();
+                if(currentModalKey){if(allProductsData[currentModalKey])openProductModal(currentModalKey);else closeModal(true);}
+            });
             db.ref('config').on('value',snap=>{const c=snap.val()||{};writeCache(CACHE_CONFIG,c);applyConfig(c);});
         }
 
@@ -931,7 +997,7 @@
                 const updates={};
                 for(const item of cart){const p=allProductsData[item.key];if(!p)continue;const newStock=Math.max(0,(Number(p.stock)||0)-item.qty);updates[`productos/${item.key}/stock`]=newStock;if(p)p.stock=newStock;}
                 writeCache(CACHE_PRODUCTS_META,buildMetadataCache(allProductsData));
-                idbPutProducts(allProductsData);
+                idbSetCatalogSnapshot(allProductsData);
                 const body=JSON.stringify(updates);
                 fetch(`${DB_ROOT}/.json`,{method:'PATCH',headers:{'Content-Type':'application/json'},body,keepalive:true,cache:'no-store'}).catch(()=>{});
             }catch(_){ }
@@ -947,13 +1013,12 @@
         async function signUp(){const e=$("reg-email").value.trim(),p=$("reg-pass").value,n=$("reg-name").value.trim();if(!e||!p)return alert('Completa correo y contraseña.');try{await ensureFirebase();const r=await auth.createUserWithEmailAndPassword(e,p);await r.user.updateProfile({displayName:n});location.reload();}catch(err){alert(err.message);}}
         async function signIn(){const e=$("login-email").value.trim(),p=$("login-pass").value;if(e===bossCreds.id&&p===bossCreds.pass){isBoss=true;document.body.classList.add('admin-mode');$("admin-settings-ui").style.display='block';$("auth-status").innerText='Panel Admin';$("login-view").style.display='none';$("logout-btn").style.display='block';$("login-email").value='';$("login-pass").value='';['nav-title','store-name','store-slogan'].forEach(id=>{$(id).contentEditable=true;});renderProducts();toast('Modo edición activado');return;}if(!e||!p)return alert('Escribe correo y contraseña.');try{await ensureFirebase();await auth.signInWithEmailAndPassword(e,p);}catch(err){alert(err.message);}}
         async function signOut(){if(isBoss)return exitBossMode();try{await ensureFirebase();await auth.signOut();updateAuthUI(null);}catch(err){alert(err.message);}}
-        async function addProduct(){if(!isBoss)return;try{await ensureFirebase();await db.ref('productos').push({nombre:'Nuevo Producto',precio:'$0',stock:10,imagen:PLACEHOLDER,imagenes:[PLACEHOLDER],categoria:'General',descripcion:'Descripción detallada del producto.',caracteristicas:'Color: N/A\nTamaño: N/A'});}catch(err){alert('No se pudo crear el producto: '+(err.message||'error de Firebase'));}}
-        async function del(k){if(!isBoss||!confirm('¿Eliminar este producto?'))return;try{await ensureFirebase();await db.ref('productos/'+k).remove();}catch(err){alert('No se pudo eliminar: '+(err.message||'error de Firebase'));}}
+        async function addProduct(){if(!isBoss)return;try{await ensureFirebase();await db.ref('productos').push({nombre:'Nuevo Producto',precio:'$0',stock:10,imagen:PLACEHOLDER,imagenes:[PLACEHOLDER],categoria:'General',descripcion:'Descripción detallada del producto.',caracteristicas:'Color: N/A\nTamaño: N/A'});toast('Producto creado');}catch(err){alert('No se pudo crear el producto: '+(err.message||'error de Firebase'));}}
+        async function del(k){if(!isBoss||!confirm('¿Eliminar este producto?'))return;try{await ensureFirebase();await db.ref('productos/'+k).remove();delete allProductsData[k];writeCache(CACHE_PRODUCTS_META,buildMetadataCache(allProductsData));await idbSetCatalogSnapshot(allProductsData);renderProducts();toast('Producto eliminado');}catch(err){alert('No se pudo eliminar: '+(err.message||'error de Firebase'));}}
         function updateAuthUI(u){if(isBoss)return;const st=$("auth-status");if(u){st.innerText='¡Hola, '+(u.displayName||'Usuario')+'!';$("login-view").style.display='none';$("logout-btn").style.display='block';}else{st.innerText='Inicia Sesión';$("login-view").style.display='block';$("logout-btn").style.display='none';}}
 
         // Primera pintura: configuración y caché se aplican sin esperar a Firebase SDK.
         loadLocalState();
-        renderSkeletons();
         // Logo/fondo en IDB: si ya existen, vuelven antes de que la red responda.
         applyAssetFromCache('logo', url => { if(url && $("store-logo"))$("store-logo").src=url; });
         applyAssetFromCache('background', url => { if(url && $("dynamic-header"))$("dynamic-header").style.backgroundImage=`url("${url}")`; });
