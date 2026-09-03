@@ -283,7 +283,7 @@
         <button class="btn-v" style="background:var(--rojo);" onclick="exitBossMode()">Cerrar Edición</button>
     </footer>
 
-    <!-- SCRIPT ULTRA OPTIMIZADO -->
+    <!-- SCRIPT DE CARGA INSTANTÁNEA Y ULTRA FLUIDA -->
     <script>
         let isBoss = false;
         let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
@@ -309,13 +309,19 @@
             closeSidebars(); renderProducts();
         }
 
-        // Renderizado optimizado mediante DocumentFragment para evitar bloqueos en móviles
+        // Renderizado instantáneo y por lotes (Fragment) optimizado para redes lentas
         function renderProducts() {
             const grid = document.getElementById('product-grid');
             if(!grid) return;
             
+            // Si Firebase aún no responde en la red 2.4 GHz, muestra un aviso inmediato en lugar de congelarse
+            if(Object.keys(allProductsData).length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:#666; font-size:1.1rem;">⏳ Sincronizando catálogo con la tienda...</div>`;
+                return;
+            }
+
             const fragment = document.createDocumentFragment();
-            grid.innerHTML = ""; // Limpieza rápida
+            grid.innerHTML = ""; 
 
             for(let k in allProductsData) {
                 const p = allProductsData[k];
@@ -329,7 +335,7 @@
 
                 cardDiv.innerHTML = `
                     ${stock <= 0 ? '<div class="badge-agotado">AGOTADO</div>' : ''}
-                    <img src="${mainImg}" class="card-img" loading="lazy" onclick="openProductModal('${k}')" title="Clic para ver detalles" alt="${p.nombre || 'Producto'}">
+                    <img src="${mainImg}" class="card-img" loading="lazy" onclick="openProductModal('${k}')" alt="${p.nombre || 'Producto'}">
                     
                     <div style="padding:15px; flex-grow: 1; display: flex; flex-direction: column;">
                         <h3 class="e-n" contenteditable="${isBoss}" style="font-size:1.1rem;">${p.nombre || 'Producto'}</h3>
