@@ -347,9 +347,8 @@
                 <h3>📦 Datos para el pedido</h3>
                 <input id="order-name" type="text" autocomplete="name" placeholder="Nombre de quien recibe">
                 <input id="order-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="Teléfono de contacto">
-                <select id="order-delivery">
+                <select id="order-delivery" aria-label="Tipo de entrega">
                     <option value="Domicilio">🚚 Domicilio</option>
-                    <option value="Recoger en tienda">🏪 Recoger en tienda</option>
                 </select>
                 <input id="order-address" type="text" autocomplete="street-address" placeholder="Dirección / barrio (si aplica)">
                 <textarea id="order-notes" placeholder="Notas del pedido (opcional)"></textarea>
@@ -373,7 +372,12 @@
         <button class="btn-v" style="background:var(--rojo);" onclick="exitBossMode()">Cerrar Edición</button>
     </footer>
 
-    <!-- SCRIPT OPTIMIZADO: catálogo rápido + Firebase bajo demanda -->
+    <!-- Firebase se descarga de forma diferida y en paralelo; no bloquea el HTML. -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
+
+    <!-- SCRIPT OPTIMIZADO: catálogo confiable + WhatsApp directo -->
     <script>
         "use strict";
 
@@ -385,8 +389,10 @@
         let db = null, auth = null;
         let firebaseStarted = false;
         let realtimeListenersStarted = false;
-        let firebasePromise = null;
+        let firebaseBootPromise = null;
         let toastTimer = null;
+        let catalogRequestInFlight = false;
+        let catalogRetryTimer = null;
 
         const DB_ROOT = "https://fruteria-las-espinas-default-rtdb.firebaseio.com";
         const CACHE_PRODUCTS = "espinas_bellas_products_v3_light";
@@ -524,7 +530,7 @@
                     if ($("order-name")) $("order-name").value = order.name || "";
                     if ($("order-phone")) $("order-phone").value = order.phone || "";
                     if ($("order-address")) $("order-address").value = order.address || "";
-                    if ($("order-delivery")) $("order-delivery").value = order.delivery || "Domicilio";
+                    if ($("order-delivery")) $("order-delivery").value = "Domicilio";
                     if ($("order-notes")) $("order-notes").value = order.notes || "";
                 }
             } catch (_) {}
@@ -558,6 +564,7 @@
         function renderSkeletons(count = 6) {
             const grid = $("product-grid");
             if (!grid || Object.keys(allProductsData).length) return;
+            if (grid.querySelector(".skeleton-card")) return;
             grid.innerHTML = Array.from({ length: count }, () => `
                 <div class="skeleton-card" aria-hidden="true">
                     <div class="skeleton skeleton-img"></div>
@@ -850,63 +857,100 @@
             }
         }
 
-        async function fetchJSON(path, timeout = 5000) {
+        async function fetchJSON(path, timeout = 6000) {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), timeout);
             try {
                 const res = await fetch(`${DB_ROOT}/${path}.json`, { signal: controller.signal, cache: "no-store" });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 return await res.json();
-            } finally { clearTimeout(timer); }
+            } finally {
+                clearTimeout(timer);
+            }
         }
 
-        async function refreshCatalog() {
-            renderSkeletons();
-            const results = await Promise.allSettled([fetchJSON("productos", 6500), fetchJSON("config", 6500)]);
-            const productsResult = results[0], configResult = results[1];
-            if (productsResult.status === "fulfilled") {
-                allProductsData = productsResult.value || {};
+        async function applyCatalogData(products) {
+            allProductsData = (products && typeof products === "object") ? products : {};
+            if (Object.keys(allProductsData).length) {
                 writeCache(CACHE_PRODUCTS, compactProductsForCache(allProductsData));
                 idbSet("products_full", allProductsData);
+                if (catalogFailureTimer) { clearTimeout(catalogFailureTimer); catalogFailureTimer = null; }
                 renderProducts();
-            } else if (!Object.keys(allProductsData).length) {
-                setLoadingMessage("No se pudo cargar el catálogo. Comprueba tu conexión e inténtalo nuevamente.", "error");
+                return true;
             }
-            if (configResult.status === "fulfilled") {
-                const c = configResult.value || {};
-                writeCache(CACHE_CONFIG, c);
-                applyConfig(c);
-            }
-            scheduleRealtime();
+            return false;
+        }
+
+        let catalogFailureTimer = null;
+
+        async function refreshCatalog(options = {}) {
+            if (catalogRequestInFlight && !options.force) return;
+            catalogRequestInFlight = true;
+            renderSkeletons();
+
+            // Importante: Firebase y la lectura REST arrancan EN PARALELO.
+            // Antes se esperaba hasta 5-6 s al REST antes de iniciar Firebase; eso
+            // podía dejar al cliente atrapado en "No se pudo cargar" en el primer acceso.
+            const firebaseAttempt = bootFirebase().then(() => true).catch(err => {
+                console.warn("Firebase no pudo iniciar de inmediato:", err);
+                return false;
+            });
+
+            const restAttempt = (async () => {
+                try {
+                    const products = await fetchJSON("productos", options.timeout || 5000);
+                    return await applyCatalogData(products);
+                } catch (err) {
+                    console.warn("Lectura rápida REST no disponible:", err);
+                    return false;
+                }
+            })();
+
+            const gotRest = await restAttempt;
+            if (gotRest) loadConfigFast();
+            await Promise.race([firebaseAttempt, new Promise(resolve => setTimeout(resolve, 900))]);
+            catalogRequestInFlight = false;
+
+            // Damos tiempo a la conexión en tiempo real antes de mostrar un error.
+            // El cliente ve skeletons, no una pantalla rota.
+            if (catalogFailureTimer) clearTimeout(catalogFailureTimer);
+            catalogFailureTimer = setTimeout(() => {
+                if (!Object.keys(allProductsData).length && !firebaseStarted) {
+                    setLoadingMessage("No fue posible conectar con el catálogo. Toca reintentar.", "error");
+                }
+            }, 15000);
+        }
+
+        async function loadConfigFast() {
+            try {
+                const c = await fetchJSON("config", 5000);
+                if (c && typeof c === "object") {
+                    writeCache(CACHE_CONFIG, c);
+                    applyConfig(c);
+                }
+            } catch (_) {}
         }
 
         function loadScript(src) {
+            return Promise.reject(new Error("Las librerías de Firebase se cargan mediante <script defer> y no necesitan carga dinámica."));
+        }
+
+        function waitForFirebaseScripts(timeout = 10000) {
             return new Promise((resolve, reject) => {
-                const existing = document.querySelector(`script[data-src="${src}"]`);
-                if (existing) {
-                    if (existing.dataset.loaded === "1") return resolve();
-                    existing.addEventListener("load", resolve, { once:true });
-                    existing.addEventListener("error", reject, { once:true });
-                    return;
-                }
-                const script = document.createElement("script");
-                script.src = src;
-                script.async = true;
-                script.dataset.src = src;
-                script.onload = () => { script.dataset.loaded = "1"; resolve(); };
-                script.onerror = reject;
-                document.head.appendChild(script);
+                const started = Date.now();
+                const check = () => {
+                    if (window.firebase && firebase.database && firebase.auth) return resolve();
+                    if (Date.now() - started >= timeout) return reject(new Error("Firebase tardó demasiado en iniciar."));
+                    setTimeout(check, 60);
+                };
+                check();
             });
         }
 
-        function ensureFirebase() {
-            if (firebasePromise) return firebasePromise;
-            firebasePromise = (async () => {
-                await loadScript("https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js");
-                await Promise.all([
-                    loadScript("https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"),
-                    loadScript("https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js")
-                ]);
+        function bootFirebase() {
+            if (firebaseBootPromise) return firebaseBootPromise;
+            firebaseBootPromise = (async () => {
+                await waitForFirebaseScripts();
                 const firebaseConfig = {
                     apiKey: "AIzaSyAOCuJ_tFSsKKqXKtgGvrrZgWDAPqt2uEk",
                     authDomain: "fruteria-las-espinas.firebaseapp.com",
@@ -921,24 +965,30 @@
                 auth.onAuthStateChanged(updateAuthUI);
                 return { db, auth };
             })().catch(err => {
-                firebasePromise = null;
+                firebaseBootPromise = null;
                 firebaseStarted = false;
-                console.error("No se pudo cargar Firebase:", err);
                 throw err;
             });
-            return firebasePromise;
+            return firebaseBootPromise;
+        }
+
+        function ensureFirebase() {
+            return bootFirebase();
         }
 
         function startRealtimeListeners() {
             if (!db || realtimeListenersStarted) return;
             realtimeListenersStarted = true;
             db.ref("productos").on("value", snap => {
-                allProductsData = snap.val() || {};
-                writeCache(CACHE_PRODUCTS, compactProductsForCache(allProductsData));
-                idbSet("products_full", allProductsData);
-                renderProducts();
-                if (currentModalKey) allProductsData[currentModalKey] ? openProductModal(currentModalKey) : closeModal(true);
-            }, err => console.warn("Listener productos:", err));
+                applyCatalogData(snap.val() || {});
+                if (currentModalKey) {
+                    if (allProductsData[currentModalKey]) openProductModal(currentModalKey);
+                    else closeModal(true);
+                }
+            }, err => {
+                console.warn("Listener productos:", err);
+                // No mostramos error agresivo al cliente: el skeleton permanece hasta que haya datos.
+            });
             db.ref("config").on("value", snap => {
                 const c = snap.val() || {};
                 writeCache(CACHE_CONFIG, c);
@@ -946,11 +996,16 @@
             }, err => console.warn("Listener config:", err));
         }
 
-        function scheduleRealtime() {
-            if (firebaseStarted || firebasePromise) return;
-            const task = () => ensureFirebase().catch(() => {});
-            if ("requestIdleCallback" in window) requestIdleCallback(task, { timeout: 3500 });
-            else setTimeout(task, 1800);
+        function scheduleFirebaseBoot() {
+            const task = () => bootFirebase().catch(err => {
+                console.warn("Firebase no pudo iniciar todavía:", err);
+                if (!Object.keys(allProductsData).length) {
+                    if (catalogRetryTimer) clearTimeout(catalogRetryTimer);
+                    catalogRetryTimer = setTimeout(() => scheduleFirebaseBoot(), 2500);
+                }
+            });
+            if ("requestIdleCallback" in window) requestIdleCallback(task, { timeout: 1200 });
+            else setTimeout(task, 120);
         }
 
         function promptAddImage() {
@@ -1052,37 +1107,58 @@
             if (!wa) return alert("El número de WhatsApp de la tienda no está configurado.");
 
             const customer = saveOrderCache();
-            let msg = "*🛒 NUEVO PEDIDO - ESPINAS BELLAS*\n---------------------------\n";
-            cart.forEach(i => { msg += `✅ ${i.qty}x ${i.name} (${i.price})\n`; });
-            msg += `---------------------------\n*💰 TOTAL: ${$("cart-total").innerText}*\n`;
-            if (customer.name) msg += `\n👤 *Cliente:* ${customer.name}`;
-            if (customer.phone) msg += `\n📞 *Teléfono:* ${customer.phone}`;
-            msg += `\n📦 *Entrega:* ${customer.delivery}`;
-            if (customer.address) msg += `\n📍 *Dirección:* ${customer.address}`;
-            if (customer.notes) msg += `\n📝 *Notas:* ${customer.notes}`;
+            const messageLines = [
+                "*🛒 NUEVO PEDIDO - ESPINAS BELLAS*",
+                "---------------------------"
+            ];
+            cart.forEach(i => messageLines.push(`✅ ${i.qty}x ${i.name} (${i.price})`));
+            messageLines.push("---------------------------", `*💰 TOTAL: ${$("cart-total").innerText}*`);
+            if (customer.name) messageLines.push(`\n👤 *Cliente:* ${customer.name}`);
+            if (customer.phone) messageLines.push(`📞 *Teléfono:* ${customer.phone}`);
+            messageLines.push("📦 *Entrega:* Domicilio");
+            if (customer.address) messageLines.push(`📍 *Dirección:* ${customer.address}`);
+            if (customer.notes) messageLines.push(`📝 *Notas:* ${customer.notes}`);
+            const msg = messageLines.join("\n");
+            const url = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
 
-            const pendingWindow = window.open("about:blank", "_blank");
+            // No abrimos about:blank ni una pestaña auxiliar: se navega directamente.
+            // Así Android puede entregar el enlace a WhatsApp sin dejar una pestaña blanca.
             try {
                 await ensureFirebase();
                 const latestSnap = await db.ref("productos").once("value");
                 const latest = latestSnap.val() || {};
                 for (const item of cart) {
                     const available = Number(latest[item.key]?.stock) || 0;
-                    if (item.qty > available) throw new Error(`Stock insuficiente para ${item.name}. Disponible: ${available}.`);
+                    if (item.qty > available) {
+                        throw new Error(`Stock insuficiente para ${item.name}. Disponible: ${available}.`);
+                    }
                 }
                 const up = {};
-                cart.forEach(item => { up[`productos/${item.key}/stock`] = Math.max(0, (Number(latest[item.key]?.stock) || 0) - item.qty); });
+                cart.forEach(item => {
+                    up[`productos/${item.key}/stock`] = Math.max(0, (Number(latest[item.key]?.stock) || 0) - item.qty);
+                });
                 await db.ref().update(up);
-                const url = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
-                if (pendingWindow) pendingWindow.location.href = url;
-                else window.location.href = url;
-                cart = [];
-                updateCartUI();
-                closeSidebars();
+                // Actualiza el caché antes de salir para que el catálogo no muestre stock viejo.
+                cart.forEach(item => {
+                    if (allProductsData[item.key]) {
+                        allProductsData[item.key].stock = Math.max(0, (Number(latest[item.key]?.stock) || 0) - item.qty);
+                    }
+                });
+                writeCache(CACHE_PRODUCTS, compactProductsForCache(allProductsData));
+                idbSet("products_full", allProductsData);
             } catch (err) {
-                if (pendingWindow) pendingWindow.close();
-                alert("No se pudo finalizar el pedido: " + (err.message || "error de conexión"));
+                alert("No se pudo actualizar el pedido: " + (err.message || "error de conexión"));
+                return;
             }
+
+            cart = [];
+            saveCartCache();
+            updateCartUI();
+            closeSidebars();
+            toast("Abriendo WhatsApp…");
+
+            // Navegación en la misma pestaña: sin popup, sin about:blank y sin doble salto.
+            window.location.assign(url);
         }
 
         async function editBackground() {
@@ -1209,11 +1285,13 @@
             }
         }
 
-        // Inicio: primero pinta caché/skeleton y lanza una lectura REST ligera.
+        // Inicio: primero muestra caché local; si no existe, skeleton inmediato.
         loadLocalState();
-        if (Object.keys(allProductsData).length) renderProducts(); else renderSkeletons();
-        loadIndexedCatalog();
-        refreshCatalog();
+        if (Object.keys(allProductsData).length) renderProducts();
+        else renderSkeletons();
+
+        // Intento rápido + Firebase como fuente definitiva. Los errores transitorios no se muestran como fallo.
+        refreshCatalog({ force: true });
 
         let filterTimer = null;
         $("search-input").addEventListener("input", () => {
