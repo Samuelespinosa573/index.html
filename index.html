@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Espinas Bellas | Premium Store</title>
     
+    <!-- Preconexión para acelerar la carga de fuentes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
@@ -118,7 +123,6 @@
         .modal-main-img { width: 100%; height: 350px; object-fit: cover; border-radius: 15px; box-shadow: var(--shadow-soft); }
         .modal-thumbs { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; align-items: center; }
         
-        /* Contenedores de miniaturas y botón de basura */
         .modal-thumb-wrap { position: relative; flex-shrink: 0; }
         .modal-thumbs img { width: 70px; height: 70px; object-fit: cover; border-radius: 10px; cursor: pointer; border: 2px solid transparent; opacity: 0.7; transition: var(--transition); display: block; }
         .modal-thumbs img:hover, .modal-thumbs img.active { border-color: var(--verde); opacity: 1; transform: scale(1.05); }
@@ -134,7 +138,6 @@
         }
         .modal-thumb-del:hover { transform: scale(1.15); background: #c5222f; }
 
-        /* Botón estilo '+' para añadir imágenes fácilmente */
         .modal-thumb-add {
             width: 70px; height: 70px; border-radius: 10px; cursor: pointer;
             border: 2px dashed var(--verde); display: flex; align-items: center;
@@ -210,9 +213,8 @@
             <button class="close-modal" onclick="closeModal(true)">&times;</button>
             
             <div class="modal-gallery">
-                <img id="modal-main-img" class="modal-main-img" src="">
+                <img id="modal-main-img" class="modal-main-img" src="" alt="Vista previa de producto">
                 <div id="modal-thumbs" class="modal-thumbs"></div>
-                <!-- Input oculto para cargar archivos locales -->
                 <input type="file" id="local-file-input" style="display:none" accept="image/*" onchange="handleLocalFileSelect(event)">
             </div>
             
@@ -301,7 +303,7 @@
         <button class="btn-v" style="background:var(--rojo);" onclick="exitBossMode()">Cerrar Edición</button>
     </footer>
 
-    <!-- INICIO DEL SCRIPT -->
+    <!-- SCRIPT OPTIMIZADO -->
     <script>
         let isBoss = false;
         let bossCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
@@ -330,16 +332,17 @@
         function renderProducts() {
             const grid = document.getElementById('product-grid');
             if(!grid) return;
-            grid.innerHTML = "";
+            
+            let htmlContent = "";
             for(let k in allProductsData) {
                 const p = allProductsData[k];
                 const stock = p.stock || 0;
                 const mainImg = (p.imagenes && p.imagenes.length > 0) ? p.imagenes[0] : (p.imagen || "https://dummyimage.com/400x300/f0f2f5/081c15.png&text=Sin+Imagen");
 
-                grid.innerHTML += `
+                htmlContent += `
                     <div class="card" data-key="${k}" data-name="${(p.nombre||'').toLowerCase()}">
                         ${stock <= 0 ? '<div class="badge-agotado">AGOTADO</div>' : ''}
-                        <img src="${mainImg}" class="card-img" onclick="openProductModal('${k}')" title="Clic para ver detalles">
+                        <img src="${mainImg}" class="card-img" loading="lazy" onclick="openProductModal('${k}')" title="Clic para ver detalles" alt="${p.nombre || 'Producto'}">
                         
                         <div style="padding:20px; flex-grow: 1; display: flex; flex-direction: column;">
                             <h3 class="e-n" contenteditable="${isBoss}">${p.nombre || 'Producto'}</h3>
@@ -357,6 +360,7 @@
                         </div>
                     </div>`;
             }
+            grid.innerHTML = htmlContent;
         }
 
         function openProductModal(k) {
@@ -371,7 +375,7 @@
             imgs.forEach((img, idx) => {
                 thumbHTML += `
                     <div class="modal-thumb-wrap">
-                        <img src="${img}" class="${idx === 0 ? 'active' : ''}" onclick="changeModalMainImg(this, '${img}')">
+                        <img src="${img}" class="${idx === 0 ? 'active' : ''}" loading="lazy" onclick="changeModalMainImg(this, '${img}')" alt="Miniatura">
                         ${isBoss ? `<button class="modal-thumb-del" onclick="event.stopPropagation(); deleteModalImage(${idx})" title="Eliminar imagen">🗑️</button>` : ''}
                     </div>`;
             });
@@ -528,7 +532,7 @@
             document.querySelectorAll('.card').forEach(c => c.style.display = c.dataset.name.includes(q) ? 'flex' : 'none');
         }
 
-        // BLOQUE DE INICIALIZACIÓN DE FIREBASE
+        // BLOQUE DE INICIALIZACIÓN DE FIREBASE OPTIMIZADO
         try {
             if (typeof firebase === 'undefined') {
                 alert("⚠️ Advertencia: No se pudieron cargar los recursos de Firebase.");
