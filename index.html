@@ -385,7 +385,12 @@
         <button class="btn-v" style="background:var(--rojo);" onclick="exitBossMode()">Cerrar Edición</button>
     </footer>
 
-    <!-- Firebase se carga SOLO cuando una función que realmente lo necesita se usa. -->
+    <!-- Firebase se carga de forma diferida pero ANTES de iniciar el catálogo.
+         Los scripts llevan defer: no bloquean el pintado inicial del HTML y permiten
+         que el catálogo público use el listener de Realtime Database en móvil. -->
+    <script defer src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js"></script>
     <script>
         "use strict";
 
@@ -899,20 +904,34 @@
             catalogRetryTimer=setTimeout(()=>fetchCatalogInBackground(),delay);
         }
         async function fetchCatalogInBackground(){
+            // Compatibilidad con versiones anteriores: el catálogo público ya no
+            // depende de REST por partes. Reanuda mediante Firebase Realtime Database.
+            return bootstrapPublicFirebase(true);
+        }
+
+        let firebaseCatalogWatchdog=null;
+        function scheduleCatalogWatchdog(){
+            clearTimeout(firebaseCatalogWatchdog);
+            firebaseCatalogWatchdog=setTimeout(()=>{
+                if(Object.keys(allProductsData).length || !catalogLoading)return;
+                setLoadingMessage('No se pudo conectar todavía. Reintentando…', true);
+                bootstrapPublicFirebase(true);
+            }, 9000);
+        }
+
+        async function bootstrapPublicFirebase(forceRetry=false){
             try{
-                await fetchProductsCanonical();
-                catalogRetryAttempt=0;
-                clearTimeout(catalogRetryTimer); catalogRetryTimer=null;
+                await ensureFirebase();
+                if(db && !realtimeListenersStarted) startRealtimeListeners();
             }catch(err){
-                console.warn('Actualización de catálogo aplazada:',err);
-                // Nunca reemplazar un catálogo ya visible por una pantalla de error.
-                if(Object.keys(allProductsData).length){
-                    catalogReady=true; catalogLoading=false;
-                    return;
+                console.warn('Firebase no disponible todavía:', err);
+                if(!Object.keys(allProductsData).length){
+                    renderSkeletons(6);
+                    setTimeout(()=>bootstrapPublicFirebase(true), forceRetry ? 5000 : 2500);
                 }
-                setLoadingMessage('Conectando con el catálogo…');
-                scheduleCatalogRetry();
+                return false;
             }
+            return true;
         }
 
         async function refreshCatalog(force=false){
@@ -924,53 +943,113 @@
             refreshPromise=(async()=>{
                 catalogLoading=true;
 
-                // 1) Pintar caché completa lo antes posible.
+                // 1) Mostrar inmediatamente el snapshot completo local.
                 const cached=await hydrateIDBCache();
-                if(!Object.keys(cached).length) renderSkeletons(6);
-
-                // 2) Actualizar desde Firebase sin bloquear la copia que ya ve el cliente.
-                await Promise.allSettled([fetchCatalogInBackground(),loadConfigFast()]);
-
-                // Si tenemos caché y la red falla, conservar exactamente esa copia.
-                if(Object.keys(allProductsData).length){
-                    catalogReady=true; catalogLoading=false;
-                    if(!document.querySelector('.card')) renderProducts();
+                if(Object.keys(cached).length){
+                    catalogReady=true;
+                    catalogLoading=false;
+                    renderProducts();
+                }else{
+                    renderSkeletons(6);
                 }
+
+                // 2) Firebase Realtime Database es ahora la fuente pública principal.
+                // No esperamos REST ni descargamos productos por partes: el listener
+                // obtiene el nodo completo y evita el fallo que dejaba la tienda en
+                // “Conectando con el catálogo” en algunos celulares.
+                scheduleCatalogWatchdog();
+                bootstrapPublicFirebase(force);
+                loadConfigFast();
             })().finally(()=>{refreshPromise=null;});
             return refreshPromise;
         }
 
         async function ensureFirebase(){
             if(firebaseBootPromise)return firebaseBootPromise;
-            if(window.firebase&&firebase.database&&firebase.auth)return Promise.resolve();
-            firebaseBootPromise=(async()=>{
-                const load=(src)=>new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.async=true;s.onload=resolve;s.onerror=()=>reject(new Error('No se pudo cargar Firebase'));document.head.appendChild(s);});
-                await load('https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js');
-                await load('https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js');
-                await load('https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js');
+            if(window.firebase && firebase.database && firebase.auth){
                 const firebaseConfig={apiKey:'AIzaSyAOCuJ_tFSsKKqXKtgGvrrZgWDAPqt2uEk',authDomain:'fruteria-las-espinas.firebaseapp.com',databaseURL:DB_ROOT,projectId:'fruteria-las-espinas'};
                 if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
-                db=firebase.database();auth=firebase.auth();startRealtimeListeners();auth.onAuthStateChanged(updateAuthUI);return {db,auth};
+                db=firebase.database();
+                auth=firebase.auth();
+                startRealtimeListeners();
+                if(auth)auth.onAuthStateChanged(updateAuthUI);
+                return {db,auth};
+            }
+            firebaseBootPromise=(async()=>{
+                // Fallback para navegadores en los que un script defer externo haya fallado.
+                const load=(src)=>new Promise((resolve,reject)=>{
+                    const existing=[...document.scripts].find(x=>x.src===src);
+                    if(existing && window.firebase) return resolve();
+                    const script=document.createElement('script');
+                    script.src=src; script.async=true;
+                    script.onload=resolve; script.onerror=()=>reject(new Error('No se pudo cargar Firebase'));
+                    document.head.appendChild(script);
+                });
+                if(!window.firebase) await load('https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js');
+                if(!window.firebase.database) await load('https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js');
+                if(!window.firebase.auth) await load('https://www.gstatic.com/firebasejs/9.17.1/firebase-auth-compat.js');
+                const firebaseConfig={apiKey:'AIzaSyAOCuJ_tFSsKKqXKtgGvrrZgWDAPqt2uEk',authDomain:'fruteria-las-espinas.firebaseapp.com',databaseURL:DB_ROOT,projectId:'fruteria-las-espinas'};
+                if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+                db=firebase.database(); auth=firebase.auth();
+                startRealtimeListeners();
+                if(auth)auth.onAuthStateChanged(updateAuthUI);
+                return {db,auth};
             })().catch(err=>{firebaseBootPromise=null;throw err;});
             return firebaseBootPromise;
         }
         function startRealtimeListeners(){
-            if(!db||realtimeListenersStarted)return;realtimeListenersStarted=true;
+            if(!db || realtimeListenersStarted)return;
+            realtimeListenersStarted=true;
+            clearTimeout(firebaseCatalogWatchdog);
+
             db.ref('productos').on('value',snap=>{
                 const raw=snap.val();
-                const p=sanitizeCatalog(raw||{});
-                // No permitir que una respuesta vacía/transitoria de red borre un
-                // catálogo válido que ya está visible en pantalla.
-                if(!Object.keys(p).length && Object.keys(allProductsData).length && raw!==null) return;
+                const p=sanitizeCatalog(raw || {});
+
+                // Un valor null significa que el nodo realmente está vacío. Si hay un
+                // catálogo local válido, no lo sustituimos por una respuesta vacía
+                // transitoria; la siguiente lectura podrá sincronizarlo.
+                if(raw===null){
+                    if(Object.keys(allProductsData).length){
+                        catalogReady=true; catalogLoading=false;
+                        clearTimeout(firebaseCatalogWatchdog);
+                        return;
+                    }
+                }
+
                 allProductsData=p;
-                writeCache(CACHE_PRODUCTS_META,buildMetadataCache(p));
-                setTimeout(()=>idbSetCatalogSnapshot(p),0);
                 catalogReady=Object.keys(p).length>0;
                 catalogLoading=false;
-                renderProducts();
-                if(currentModalKey){if(allProductsData[currentModalKey])openProductModal(currentModalKey);else closeModal(true);}
+                clearTimeout(firebaseCatalogWatchdog);
+                if(Object.keys(p).length){
+                    renderProducts();
+                    writeCache(CACHE_PRODUCTS_META,buildMetadataCache(p));
+                    idbSetCatalogSnapshot(p);
+                }else{
+                    // Solo mostramos vacío si Firebase confirmó explícitamente un
+                    // catálogo vacío, no durante una caída de red.
+                    renderProducts();
+                }
+                if(currentModalKey){
+                    if(allProductsData[currentModalKey])openProductModal(currentModalKey);
+                    else closeModal(true);
+                }
+            },err=>{
+                console.warn('Error en listener de catálogo:',err);
+                if(Object.keys(allProductsData).length){
+                    catalogReady=true; catalogLoading=false;
+                    renderProducts();
+                }else{
+                    setLoadingMessage('Conectando con el catálogo…');
+                    scheduleCatalogWatchdog();
+                }
             });
-            db.ref('config').on('value',snap=>{const c=snap.val()||{};writeCache(CACHE_CONFIG,c);applyConfig(c);});
+
+            db.ref('config').on('value',snap=>{
+                const c=snap.val()||{};
+                writeCache(CACHE_CONFIG,c);
+                applyConfig(c);
+            },err=>console.warn('Error en configuración:',err));
         }
 
         function promptAddImage(){if(!isBoss||!currentModalKey)return;const ok=confirm('¿Cómo deseas agregar la nueva imagen?\n\n• Aceptar: Buscar archivo local.\n• Cancelar: Pegar URL de internet.');if(ok)$("local-file-input").click();else{const url=prompt('Ingresa la URL de la imagen:');if(url&&url.trim())saveNewImageToProduct(url.trim());}}
