@@ -291,7 +291,7 @@
             <div class="modal-gallery">
                 <img id="modal-main-img" class="modal-main-img" src="" alt="Imagen principal">
                 <div id="modal-thumbs" class="modal-thumbs"></div>
-                <input type="file" id="local-file-input" style="display:none" accept="image/*" onchange="handleLocalFileSelect(event)">
+                
             </div>
             
             <div class="modal-details">
@@ -696,9 +696,11 @@
 
             if (db) {
                 db.ref('productos').set(allProductsData).then(() => {
-                    toast("💾 Cambios guardados en la nube");
+                    idbSetCatalogSnapshot(allProductsData);
+                    writeCache(CACHE_PRODUCTS_META, allProductsData);
+                    toast("💾 Cambios guardados en Firebase");
                 }).catch(() => {
-                    toast("❌ Error al guardar en la nube");
+                    toast("❌ Error al guardar en Firebase");
                 });
             } else {
                 toast("💾 Cambios guardados localmente");
@@ -706,6 +708,15 @@
             
             idbSetCatalogSnapshot(allProductsData);
             renderProducts();
+        }
+
+        function saveProductDirect(key, product) {
+            if (!db || !key || !product) return;
+            db.ref('productos/' + key).set(product)
+                .then(() => {
+                    idbSetCatalogSnapshot(allProductsData);
+                })
+                .catch(() => toast("❌ No se pudo guardar el producto"));
         }
 
         function saveModalChanges() {
@@ -744,7 +755,6 @@
 
             if (isBoss) {
                 thumbsHtml += `
-                    <div class="modal-thumb-add" title="Subir imagen desde archivo" onclick="triggerLocalFileInput()">📁+</div>
                     <div class="modal-thumb-add" title="Añadir imagen por URL" onclick="addImageByUrl()" style="font-size:1.1rem;">🔗+</div>
                 `;
             }
@@ -799,36 +809,19 @@
             el.classList.add('active');
         }
 
-        function triggerLocalFileInput() {
-            if (!isBoss) return;
-            $("local-file-input").click();
-        }
-
-        function handleLocalFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file || !currentModalKey || !allProductsData[currentModalKey]) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64 = e.target.result;
-                const p = allProductsData[currentModalKey];
-                if (!Array.isArray(p.imagenes)) p.imagenes = [];
-                p.imagenes.push(base64);
-                openProductModal(currentModalKey);
-                toast("📁 Imagen añadida");
-            };
-            reader.readAsDataURL(file);
-            event.target.value = "";
-        }
-
         function addImageByUrl() {
             if (!isBoss || !currentModalKey || !allProductsData[currentModalKey]) return;
             const url = prompt("Ingresa la URL de la imagen:");
-            if (!url) return;
+            if (!url || !url.trim()) return;
+
             const p = allProductsData[currentModalKey];
             if (!Array.isArray(p.imagenes)) p.imagenes = [];
             p.imagenes.push(url.trim());
+
+            // Guarda inmediatamente para evitar perder cambios al refrescar
+            saveProductDirect(currentModalKey, p);
             openProductModal(currentModalKey);
-            toast("🔗 Imagen añadida por URL");
+            toast("🔗 Imagen añadida y guardada");
         }
 
         function removeModalImage(index) {
@@ -1104,6 +1097,7 @@
                         allProductsData = sanitizeCatalog(raw);
                         renderProducts();
                         idbSetCatalogSnapshot(allProductsData);
+                        writeCache(CACHE_PRODUCTS_META, allProductsData);
                     }
                 });
 
