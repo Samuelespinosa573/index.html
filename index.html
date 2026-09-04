@@ -220,6 +220,10 @@
             .modal-overlay { backdrop-filter:none; -webkit-backdrop-filter:none; }
         }
     </style>
+
+<link rel="preload" as="script" href="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js" crossorigin>
+<meta http-equiv="Cache-Control" content="public, max-age=31536000, stale-while-revalidate">
+
 </head>
 <body id="main-body">
 
@@ -1096,6 +1100,47 @@
         async function del(k){if(!isBoss||!confirm('¿Eliminar este producto?'))return;try{await ensureFirebase();await db.ref('productos/'+k).remove();delete allProductsData[k];writeCache(CACHE_PRODUCTS_META,buildMetadataCache(allProductsData));await idbSetCatalogSnapshot(allProductsData);renderProducts();toast('Producto eliminado');}catch(err){alert('No se pudo eliminar: '+(err.message||'error de Firebase'));}}
         function updateAuthUI(u){if(isBoss)return;const st=$("auth-status");if(u){st.innerText='¡Hola, '+(u.displayName||'Usuario')+'!';$("login-view").style.display='none';$("logout-btn").style.display='block';}else{st.innerText='Inicia Sesión';$("login-view").style.display='block';$("logout-btn").style.display='none';}}
 
+        
+        // Cache persistente offline/segunda carga.
+        // La primera visita descarga normalmente; las siguientes usan caché local.
+        (function setupPersistentCache(){
+            if (!('serviceWorker' in navigator)) return;
+            const sw = `
+            const CACHE_NAME = "espinas-bellas-static-v1";
+            self.addEventListener("install", e => {
+                self.skipWaiting();
+            });
+            self.addEventListener("activate", e => {
+                e.waitUntil(self.clients.claim());
+            });
+            self.addEventListener("fetch", e => {
+                const req = e.request;
+                if (req.method !== "GET") return;
+                e.respondWith(
+                    caches.match(req).then(cached => {
+                        if (cached) {
+                            fetch(req).then(res => {
+                                caches.open(CACHE_NAME).then(c => c.put(req, res.clone()));
+                            }).catch(()=>{});
+                            return cached;
+                        }
+                        return fetch(req).then(res => {
+                            const copy = res.clone();
+                            caches.open(CACHE_NAME).then(c => c.put(req, copy));
+                            return res;
+                        }).catch(()=>caches.match("/"));
+                    })
+                );
+            });
+            `;
+            try {
+                const blob = new Blob([sw], {type:"text/javascript"});
+                const url = URL.createObjectURL(blob);
+                navigator.serviceWorker.register(url).catch(()=>{});
+            } catch(e){}
+        })();
+
+
         // Primera pintura: configuración y caché se aplican sin esperar a Firebase SDK.
         loadLocalState();
         // Logo/fondo en IDB: si ya existen, vuelven antes de que la red responda.
@@ -1115,6 +1160,16 @@
         if('requestIdleCallback' in window)requestIdleCallback(loadFonts,{timeout:2500});else setTimeout(loadFonts,1800);
 
         Object.assign(window,{openSidebar,closeSidebars,exitBossMode,renderProducts,openProductModal,promptAddImage,handleLocalFileSelect,saveNewImageToProduct,deleteModalImage,changeModalMainImg,closeModal,addToCart,updateCartQty,clearCart,updateCartUI,switchAuth,filterProducts,saveModalChanges,checkout,editBackground,editLogo,saveChanges,updateAdminCreds,signUp,signIn,signOut,addProduct,del,refreshCatalog});
+    
+        // Optimización adicional: reduce consumo de memoria en imágenes del catálogo.
+        function optimizeImageDelivery(){
+            document.querySelectorAll("img").forEach(img=>{
+                if(!img.hasAttribute("decoding")) img.decoding="async";
+                if(img.naturalWidth>1200) img.style.imageRendering="auto";
+            });
+        }
+        window.addEventListener("load", optimizeImageDelivery, {once:true});
+
     </script>
 </body>
 </html>
