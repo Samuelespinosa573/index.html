@@ -406,14 +406,9 @@
         let cart = [];
         let currentModalKey = null;
         let db = null, auth = null;
-        let realtimeListenersStarted = false;
         let renderToken = 0;
         let toastTimer = null;
-        let imageObserver = null;
-        let catalogReady = false;
-        let catalogLoading = true;
         let cacheDBPromise = null;
-        let refreshPromise = null;
 
         const $ = id => document.getElementById(id);
 
@@ -464,18 +459,6 @@
             return cacheDBPromise;
         }
 
-        async function idbGet(key) {
-            try {
-                const idb = await openCacheDB();
-                return await new Promise((resolve, reject) => {
-                    const tx = idb.transaction("store", "readonly");
-                    const req = tx.objectStore("store").get(key);
-                    req.onsuccess = () => resolve(req.result || null);
-                    req.onerror = () => reject(req.error);
-                });
-            } catch (_) { return null; }
-        }
-        
         async function idbGetCatalogSnapshot() {
             try {
                 const idb = await openCacheDB();
@@ -519,15 +502,6 @@
             if ($("results-meta")) $("results-meta").textContent = "Cargando catálogo…";
         }
 
-        function setLoadingMessage(message, error=false) {
-            if (Object.keys(allProductsData).length) return;
-            const grid = $("product-grid");
-            if (!grid) return;
-            grid.innerHTML = `<div class="empty-state" style="color:${error ? 'var(--rojo)' : '#667'}">
-                <div style="font-size:2rem;margin-bottom:10px;">${error ? '⚠️' : '⏳'}</div>
-                <b>${escapeHTML(message)}</b></div>`;
-        }
-
         function getProductImage(p) {
             if (p && Array.isArray(p.imagenes) && p.imagenes.length && p.imagenes[0]) return p.imagenes[0];
             if (p && p.imagen) return p.imagen;
@@ -559,7 +533,7 @@
             if (categories.includes(current)) select.value = current;
         }
 
-        function createProductCard(k, index) {
+        function createProductCard(k) {
             const p = allProductsData[k] || {};
             const stock = Number(p.stock)||0, name=p.nombre||"Producto", price=p.precio||"$0", category=getCategory(p);
             const card = document.createElement('div');
@@ -592,7 +566,7 @@
                 if (token !== renderToken) return;
                 const frag = document.createDocumentFragment();
                 const end = Math.min(index+BATCH, keys.length);
-                for (; index<end; index++) frag.appendChild(createProductCard(keys[index], index));
+                for (; index<end; index++) frag.appendChild(createProductCard(keys[index]));
                 grid.appendChild(frag);
                 filterProducts();
                 if (index < keys.length) requestAnimationFrame(paint);
@@ -607,33 +581,323 @@
             const meta=$("results-meta"); if(meta) meta.textContent=`${visible} producto${visible===1?'':'s'}${q||category?' encontrados':' en el catálogo'}`;
         }
 
-        function openProductModal(k) {
-            currentModalKey=k; const p=allProductsData[k]; if(!p)return;
-            const stock=Number(p.stock)||0;
-            const imgs=Array.isArray(p.imagenes)&&p.imagenes.length?p.imagenes:(p.imagen?[p.imagen]:[PLACEHOLDER]);
-            const main=$("modal-main-img"); main.src=imgs[0]||PLACEHOLDER;
-            $("modal-thumbs").innerHTML=imgs.map((img,idx)=>`<div class="modal-thumb-wrap"><img src="${escapeHTML(img)}" class="${idx===0?'active':''}" onclick="changeModalMainImg(this,'${safeKey(img)}')"></div>`).join('');
-            $("modal-title").innerText=p.nombre||'Producto sin nombre'; $("modal-price").innerText=p.precio||'$0';
-            $("modal-desc").innerText=p.descripcion||'Sin descripción detallada.'; $("modal-features").innerText=p.caracteristicas||'Sin características.'; $("modal-category").innerText=getCategory(p);
-            const btn=$("modal-add-cart"); btn.onclick=()=>addToCart(k); btn.disabled=stock<=0; btn.innerText=stock<=0?'Producto Agotado':'🛒 Añadir al Carrito';
-            $("product-modal").style.display='flex';
-        }
-        function closeModal(arg=false){if(arg===true || (arg && arg.target?.classList?.contains('modal-overlay'))){$("product-modal").style.display='none';currentModalKey=null;}}
-        function changeModalMainImg(el,src){$("modal-main-img").src=src;document.querySelectorAll('.modal-thumbs img').forEach(x=>x.classList.remove('active'));el.classList.add('active');}
+        // ==========================================
+        // FUNCIONES DE ADMINISTRACIÓN Y EDICIÓN
+        // ==========================================
 
-        function addToCart(key){
-            const p=allProductsData[key]; if(!p)return;
-            const stock=Number(p.stock)||0; if(stock<=0)return alert('Este producto está agotado.');
-            const ex=cart.find(i=>i.key===key);
+        function addProduct() {
+            if (!isBoss) return;
+            const newKey = 'prod_' + Date.now();
+            allProductsData[newKey] = {
+                nombre: "Nuevo Producto",
+                precio: "$5.000",
+                descripcion: "Descripción del nuevo producto...",
+                caracteristicas: "Características principales...",
+                categoria: "General",
+                stock: 10,
+                imagenes: [PLACEHOLDER]
+            };
+            renderProducts();
+            openProductModal(newKey);
+            toast("Nuevo producto creado");
+        }
+
+        function del(key) {
+            if (!isBoss) return;
+            if (confirm("¿Estás seguro de eliminar este producto?")) {
+                delete allProductsData[key];
+                renderProducts();
+                if (currentModalKey === key) closeModal(true);
+                saveChanges();
+                toast("Producto eliminado");
+            }
+        }
+
+        function saveChanges() {
+            if (!isBoss) return;
+            document.querySelectorAll('.card').forEach(card => {
+                const k = card.dataset.key;
+                if (allProductsData[k]) {
+                    const nameEl = card.querySelector('.e-n');
+                    const priceEl = card.querySelector('.e-p');
+                    const stockEl = card.querySelector('.e-s');
+                    if (nameEl) allProductsData[k].nombre = nameEl.innerText.trim();
+                    if (priceEl) allProductsData[k].precio = priceEl.innerText.trim();
+                    if (stockEl) allProductsData[k].stock = Number(stockEl.value) || 0;
+                }
+            });
+
+            if (db) {
+                db.ref('productos').set(allProductsData).then(() => {
+                    toast("Cambios guardados en la nube");
+                }).catch(() => {
+                    toast("Error al guardar en la nube");
+                });
+            } else {
+                toast("Cambios guardados localmente");
+            }
+            idbSetCatalogSnapshot(allProductsData);
+            renderProducts();
+        }
+
+        function saveModalChanges() {
+            if (!isBoss || !currentModalKey || !allProductsData[currentModalKey]) return;
+            const p = allProductsData[currentModalKey];
+            p.nombre = $("modal-title").innerText.trim();
+            p.precio = $("modal-price").innerText.trim();
+            p.descripcion = $("modal-desc").innerText.trim();
+            p.caracteristicas = $("modal-features").innerText.trim();
+            p.categoria = $("modal-category").innerText.trim() || "General";
+            const stockInput = $("modal-stock");
+            if (stockInput) p.stock = Number(stockInput.value) || 0;
+
+            saveChanges();
+            closeModal(true);
+            toast("Producto actualizado correctamente");
+        }
+
+        function openProductModal(k) {
+            currentModalKey = k; 
+            const p = allProductsData[k]; 
+            if (!p) return;
+            const stock = Number(p.stock) || 0;
+            const imgs = Array.isArray(p.imagenes) && p.imagenes.length ? p.imagenes : (p.imagen ? [p.imagen] : [PLACEHOLDER]);
+            const main = $("modal-main-img"); 
+            main.src = imgs[0] || PLACEHOLDER;
+
+            let thumbsHtml = imgs.map((img, idx) => `
+                <div class="modal-thumb-wrap">
+                    <img src="${escapeHTML(img)}" class="${idx === 0 ? 'active' : ''}" onclick="changeModalMainImg(this, '${safeKey(img)}')">
+                    ${isBoss ? `<button class="modal-thumb-del" title="Eliminar imagen" onclick="removeModalImage(${idx})">&times;</button>` : ''}
+                </div>
+            `).join('');
+
+            if (isBoss) {
+                thumbsHtml += `
+                    <div class="modal-thumb-add" title="Subir imagen desde archivo" onclick="triggerLocalFileInput()">📁+</div>
+                    <div class="modal-thumb-add" title="Añadir imagen por URL" onclick="addImageByUrl()" style="font-size:1.1rem;">🔗+</div>
+                `;
+            }
+
+            $("modal-thumbs").innerHTML = thumbsHtml;
+            $("modal-title").innerText = p.nombre || 'Producto sin nombre';
+            $("modal-price").innerText = p.precio || '$0';
+            $("modal-desc").innerText = p.descripcion || 'Sin descripción detallada.';
+            $("modal-features").innerText = p.caracteristicas || 'Sin características.';
+            $("modal-category").innerText = getCategory(p);
+
+            const stockCont = $("modal-stock-container");
+            const stockInput = $("modal-stock");
+            const saveBtn = $("modal-save-btn");
+
+            if (isBoss) {
+                stockCont.style.display = 'block';
+                stockInput.value = stock;
+                saveBtn.style.display = 'block';
+                $("modal-title").setAttribute('contenteditable', 'true');
+                $("modal-price").setAttribute('contenteditable', 'true');
+                $("modal-desc").setAttribute('contenteditable', 'true');
+                $("modal-features").setAttribute('contenteditable', 'true');
+                $("modal-category").setAttribute('contenteditable', 'true');
+            } else {
+                stockCont.style.display = 'none';
+                saveBtn.style.display = 'none';
+                $("modal-title").setAttribute('contenteditable', 'false');
+                $("modal-price").setAttribute('contenteditable', 'false');
+                $("modal-desc").setAttribute('contenteditable', 'false');
+                $("modal-features").setAttribute('contenteditable', 'false');
+                $("modal-category").setAttribute('contenteditable', 'false');
+            }
+
+            const btn = $("modal-add-cart"); 
+            btn.onclick = () => addToCart(k); 
+            btn.disabled = stock <= 0; 
+            btn.innerText = stock <= 0 ? 'Producto Agotado' : '🛒 Añadir al Carrito';
+
+            $("product-modal").style.display = 'flex';
+        }
+
+        function closeModal(arg = false) {
+            if (arg === true || (arg && arg.target?.classList?.contains('modal-overlay'))) {
+                $("product-modal").style.display = 'none';
+                currentModalKey = null;
+            }
+        }
+        function changeModalMainImg(el, src) {
+            $("modal-main-img").src = src;
+            document.querySelectorAll('.modal-thumbs img').forEach(x => x.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function triggerLocalFileInput() {
+            if (!isBoss) return;
+            $("local-file-input").click();
+        }
+
+        function handleLocalFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file || !currentModalKey || !allProductsData[currentModalKey]) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                const p = allProductsData[currentModalKey];
+                if (!Array.isArray(p.imagenes)) p.imagenes = [];
+                p.imagenes.push(base64);
+                openProductModal(currentModalKey);
+                toast("Imagen añadida desde archivo");
+            };
+            reader.readAsDataURL(file);
+            event.target.value = "";
+        }
+
+        function addImageByUrl() {
+            if (!isBoss || !currentModalKey || !allProductsData[currentModalKey]) return;
+            const url = prompt("Ingresa la URL de la imagen:");
+            if (!url) return;
+            const p = allProductsData[currentModalKey];
+            if (!Array.isArray(p.imagenes)) p.imagenes = [];
+            p.imagenes.push(url.trim());
+            openProductModal(currentModalKey);
+            toast("Imagen añadida por URL");
+        }
+
+        function removeModalImage(index) {
+            if (!isBoss || !currentModalKey || !allProductsData[currentModalKey]) return;
+            const p = allProductsData[currentModalKey];
+            if (!Array.isArray(p.imagenes) || p.imagenes.length <= 1) {
+                alert("El producto debe tener al menos una imagen.");
+                return;
+            }
+            p.imagenes.splice(index, 1);
+            openProductModal(currentModalKey);
+            toast("Imagen eliminada");
+        }
+
+        function editLogo() {
+            if (!isBoss) return;
+            const url = prompt("Ingresa la URL de la nueva imagen del logo (o deja en blanco para subir archivo):");
+            if (url !== null) {
+                if (url.trim() !== "") {
+                    updateConfigField("logo", url.trim());
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/*';
+                    input.onchange = e => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = ev => updateConfigField("logo", ev.target.result);
+                        reader.readAsDataURL(file);
+                    };
+                    input.click();
+                }
+            }
+        }
+
+        function editBackground() {
+            if (!isBoss) return;
+            const url = prompt("Ingresa la URL de la imagen de fondo del encabezado:");
+            if (url && url.trim() !== "") {
+                updateConfigField("background", url.trim());
+            }
+        }
+
+        function updateConfigField(field, val) {
+            const cfg = readCache(CACHE_CONFIG) || {};
+            cfg[field] = val;
+            writeCache(CACHE_CONFIG, cfg);
+            applyConfig(cfg);
+            if (db) {
+                db.ref('config').update({ [field]: val }).then(() => toast("Configuración actualizada")).catch(() => {});
+            } else {
+                toast("Configuración guardada localmente");
+            }
+        }
+
+        function updateAdminCreds() {
+            if (!isBoss) return;
+            const oldPass = $("confirm-old-pass").value;
+            if (oldPass !== bossCreds.pass) {
+                alert("La contraseña actual ingresada es incorrecta.");
+                return;
+            }
+            const newWa = $("edit-wa").value.trim();
+            const newId = $("edit-boss-id").value.trim();
+            const newPass = $("edit-boss-pass").value;
+
+            if (newWa) bossCreds.wa = newWa;
+            if (newId) bossCreds.id = newId;
+            if (newPass) bossCreds.pass = newPass;
+
+            const cfg = readCache(CACHE_CONFIG) || {};
+            cfg.admin = bossCreds;
+            if (newWa) cfg.whatsapp = newWa;
+            writeCache(CACHE_CONFIG, cfg);
+
+            if (db) {
+                db.ref('config/admin').set(bossCreds);
+                if (newWa) db.ref('config/whatsapp').set(newWa);
+            }
+            toast("Credenciales y ajustes actualizados con éxito");
+            $("confirm-old-pass").value = "";
+            $("edit-boss-pass").value = "";
+        }
+
+        // ==========================================
+        // GESTIÓN DEL CARRITO, SESIÓN Y REGISTRO (AÑADIDO)
+        // ==========================================
+
+        async function signUp() {
+            const name = $("reg-name").value.trim();
+            const email = $("reg-email").value.trim();
+            const pass = $("reg-pass").value;
+            if (!name || !email || !pass) {
+                alert("Por favor completa todos los campos de registro.");
+                return;
+            }
+            if (auth) {
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, pass);
+                    await userCredential.user.updateProfile({ displayName: name });
+                    toast("¡Cuenta creada con éxito!");
+                    switchAuth(false);
+                } catch (error) {
+                    alert("Error al registrarse: " + error.message);
+                }
+            } else {
+                toast("Sistema de autenticación no disponible.");
+            }
+        }
+
+        async function signOut() {
+            if (auth) {
+                try {
+                    await auth.signOut();
+                    $("logout-btn").style.display = 'none';
+                    $("auth-status").innerText = 'Inicia Sesión';
+                    toast("Sesión cerrada");
+                } catch (error) {
+                    alert("Error al cerrar sesión: " + error.message);
+                }
+            } else {
+                toast("Sesión cerrada localmente.");
+            }
+        }
+
+        function addToCart(key) {
+            const p = allProductsData[key]; if(!p)return;
+            const stock = Number(p.stock)||0; if(stock<=0)return alert('Este producto está agotado.');
+            const ex = cart.find(i=>i.key===key);
             if(ex){ if(ex.qty>=stock)return alert('No hay más unidades disponibles.'); ex.qty++; }
             else cart.push({key, name:p.nombre||'Producto', price:p.precio||'$0', qty:1});
             updateCartUI(); toast('Producto añadido al carrito');
         }
 
-        function updateCartQty(key,delta){
-            const item=cart.find(i=>i.key===key), p=allProductsData[key]; if(!item||!p)return;
-            item.qty+=delta;
-            if(item.qty<=0) cart=cart.filter(i=>i.key!==key);
+        function updateCartQty(key, delta) {
+            const item = cart.find(i=>i.key===key), p = allProductsData[key]; if(!item||!p)return;
+            item.qty += delta;
+            if(item.qty <= 0) cart = cart.filter(i=>i.key!==key);
             updateCartUI();
         }
 
@@ -691,7 +955,6 @@
         async function initApp() {
             loadLocalState();
             
-            // Cargar snapshot previo desde IndexedDB para renderizado instantáneo
             const cachedSnap = await idbGetCatalogSnapshot();
             if (cachedSnap && Object.keys(cachedSnap).length) {
                 allProductsData = sanitizeCatalog(cachedSnap);
@@ -700,7 +963,6 @@
                 renderSkeletons();
             }
 
-            // Inicializar Firebase de forma segura con los SDKs cargados arriba
             if (window.firebase) {
                 const firebaseConfig = {
                     apiKey: 'AIzaSyAOCuJ_tFSsKKqXKtgGvrrZgWDAPqt2uEk',
@@ -714,7 +976,18 @@
                 db = firebase.database();
                 auth = firebase.auth();
 
-                // Escuchar cambios en tiempo real
+                // Oyente de autenticación añadido
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        $("auth-status").innerText = `Hola, ${user.displayName || user.email}`;
+                        $("logout-btn").style.display = 'block';
+                        $("login-view").style.display = 'none';
+                        $("register-view").style.display = 'none';
+                    } else {
+                        $("logout-btn").style.display = 'none';
+                    }
+                });
+
                 db.ref('productos').on('value', snap => {
                     const raw = snap.val();
                     if (raw) {
@@ -757,10 +1030,18 @@
                 toast('Modo edición activado');
                 return;
             }
+            if (auth) {
+                try {
+                    await auth.signInWithEmailAndPassword(e, p);
+                    toast('Sesión iniciada correctamente');
+                    return;
+                } catch (error) {
+                    // Fallthrough to alert if not firebase user either
+                }
+            }
             alert('Credenciales incorrectas');
         }
 
-        // Eventos y arranque
         document.addEventListener("DOMContentLoaded", initApp);
         $("search-input").addEventListener('input', filterProducts);
         $("category-filter").addEventListener('change', filterProducts);
