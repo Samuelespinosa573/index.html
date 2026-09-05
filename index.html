@@ -414,8 +414,8 @@
         "use strict";
 
         const DB_ROOT = "https://fruteria-las-espinas-default-rtdb.firebaseio.com";
-        const CACHE_PRODUCTS_META = "espinas_bellas_products_meta_v5";
-        const CACHE_CATALOG_SNAPSHOT = "espinas_bellas_catalog_snapshot_v5";
+        const CACHE_PRODUCTS_META = "espinas_bellas_products_meta_v6";
+        const CACHE_CATALOG_SNAPSHOT = "espinas_bellas_catalog_snapshot_v6";
         const CACHE_CONFIG = "espinas_bellas_config_v5";
         const CACHE_CART = "espinas_bellas_cart_v4";
         const CACHE_THEME = "espinas_bellas_theme_v1";
@@ -600,7 +600,7 @@
             const deleteButton = isBoss ? `<p onclick="del('${safeKey(k)}')" style="color:var(--rojo);cursor:pointer;font-size:.75rem;margin-top:12px;font-weight:bold;">🗑️ ELIMINAR</p>` : '';
             
             card.innerHTML = `${stock<=0?'<div class="badge-agotado">AGOTADO</div>':''}
-                <img class="card-img" src="${escapeHTML(getProductImage(p))}" alt="${escapeHTML(name)}" loading="lazy" onclick="openProductModal('${safeKey(k)}')">
+                <img class="card-img" src="${escapeHTML(getProductImage(p))}${getProductImage(p).includes("?") ? "&" : "?"}v=${Date.now()}" alt="${escapeHTML(name)}" loading="lazy" onclick="openProductModal('${safeKey(k)}')">
                 <div style="padding:15px;flex-grow:1;display:flex;flex-direction:column;">
                     <div class="product-meta"><span class="product-chip">${escapeHTML(category)}</span><span class="product-chip stock-chip ${stock>0&&stock<=5?'low':''}">${stock<=0?'Agotado':stock<=5?`Quedan ${stock}`:'Disponible'}</span></div>
                     <h3 class="e-n" contenteditable="${isBoss}" style="font-size:1.1rem;">${escapeHTML(name)}</h3>
@@ -1067,9 +1067,10 @@
         function applyRemoteProducts(raw){
             const clean = sanitizeCatalog(raw || {});
             const hash = catalogHash(clean);
-            if(hash === lastFirebaseProductsHash) return;
+            if(hash === lastFirebaseProductsHash && Object.keys(allProductsData).length) return;
             lastFirebaseProductsHash = hash;
             allProductsData = clean;
+            // Firebase siempre gana sobre cualquier caché local antigua
             writeCache(CACHE_PRODUCTS_META, allProductsData);
             idbSetCatalogSnapshot(allProductsData);
             renderProducts();
@@ -1105,6 +1106,11 @@
                 }
                 db = firebase.database();
                 auth = firebase.auth();
+
+                // Primera prioridad: sincronizar siempre con Firebase al abrir cualquier dispositivo
+                db.ref('productos').once('value').then(snap => {
+                    if (snap.exists()) applyRemoteProducts(snap.val());
+                }).catch(() => {});
 
                 auth.onAuthStateChanged(user => {
                     if (user) {
