@@ -140,7 +140,7 @@
     <header id="dynamic-header" onclick="if(isBoss) editHeaderBg()">
         <div class="header-overlay"></div>
         <div class="header-content">
-            <img src="https://via.placeholder.com/120" id="store-logo" onclick="event.stopPropagation(); if(isBoss) editStoreLogo()" alt="Logo">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' fill='%231b4332'/%3E%3Ccircle cx='60' cy='60' r='45' fill='%23ffca3a'/%3E%3Ctext x='60' y='67' text-anchor='middle' font-size='22' font-family='Arial' font-weight='700' fill='%23081c15'%3EEB%3C/text%3E%3C/svg%3E" id="store-logo" onclick="event.stopPropagation(); if(isBoss) editStoreLogo()" alt="Logo">
             <h1 id="store-name" style="margin-top:10px; font-family:'Georgia',serif;">ESPINAS BELLAS</h1>
             <p id="store-slogan" style="opacity:0.9;">Calidad y exclusividad</p>
         </div>
@@ -257,7 +257,13 @@
         "use strict";
 
         const DB_URL = "https://fruteria-las-espinas-default-rtdb.firebaseio.com";
-        const PLACEHOLDER = "https://via.placeholder.com/400x300?text=Espinas+Bellas";
+        const PLACEHOLDER = "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">' +
+            '<rect width="800" height="600" fill="#f3f4f6"/>' +
+            '<text x="400" y="285" text-anchor="middle" font-family="Arial" font-size="42" font-weight="700" fill="#1b4332">ESPINAS BELLAS</text>' +
+            '<text x="400" y="340" text-anchor="middle" font-family="Arial" font-size="24" fill="#2d6a4f">Imagen no disponible</text>' +
+            '</svg>'
+        );
         
         let isBoss = false;
         let adminCreds = { id: "24375245", pass: "1234", wa: "3212968875" };
@@ -265,6 +271,9 @@
         let cart = [];
         let currentModalKey = null;
         let db = null;
+        let dirtyProducts = new Set();
+        let deletedProductKeys = new Set();
+        let cloudReady = false;
 
         const $ = id => document.getElementById(id);
 
@@ -274,6 +283,108 @@
             t.textContent = msg;
             t.classList.add("show");
             setTimeout(() => t.classList.remove("show"), 2200);
+        }
+
+
+        function isRemoteImageUrl(url) {
+            if (typeof url !== "string") return false;
+            const value = url.trim();
+            if (!value || value.length > 2048) return false;
+            if (/^(data|blob|file):/i.test(value)) return false;
+            try {
+                const parsed = new URL(value);
+                return parsed.protocol === "https:" || parsed.protocol === "http:";
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function testImageUrl(url, timeout = 10000) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                let finished = false;
+                const timer = setTimeout(() => {
+                    if (finished) return;
+                    finished = true;
+                    img.src = "";
+                    reject(new Error("Tiempo de espera agotado al cargar la imagen"));
+                }, timeout);
+
+                img.onload = () => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timer);
+                    resolve(true);
+                };
+                img.onerror = () => {
+                    if (finished) return;
+                    finished = true;
+                    clearTimeout(timer);
+                    reject(new Error("La URL no devuelve una imagen que el navegador pueda mostrar"));
+                };
+                img.referrerPolicy = "no-referrer";
+                img.src = url;
+            });
+        }
+
+        function normalizeProductForCloud(product) {
+            const p = product && typeof product === "object" ? product : {};
+            const images = [];
+
+            const candidates = Array.isArray(p.imagenes)
+                ? p.imagenes
+                : (typeof p.imagen === "string" ? [p.imagen] : []);
+
+            for (const raw of candidates) {
+                if (isRemoteImageUrl(raw) && !images.includes(raw.trim())) {
+                    images.push(raw.trim());
+                }
+                if (images.length >= 20) break;
+            }
+
+            return {
+                nombre: String(p.nombre || "Producto").slice(0, 150),
+                precio: String(p.precio || "$0").slice(0, 50),
+                descripcion: String(p.descripcion || "").slice(0, 5000),
+                caracteristicas: String(p.caracteristicas || "").slice(0, 5000),
+                categoria: String(p.categoria || "General").slice(0, 120),
+                stock: Math.max(0, Number(p.stock) || 0),
+                imagenes: images
+            };
+        }
+
+        function markProductDirty(key) {
+            if (!key) return;
+            dirtyProducts.add(key);
+            deletedProductKeys.delete(key);
+        }
+
+        function setHeaderEditable(enabled) {
+            ["store-name", "store-slogan"].forEach(id => {
+                const el = $(id);
+                if (el) el.contentEditable = enabled ? "true" : "false";
+            });
+        }
+
+        async function saveProductToCloud(key) {
+            if (!db || !key || !productsData[key]) return;
+            const clean = normalizeProductForCloud(productsData[key]);
+            await db.ref("productos/" + key).set(clean);
+            productsData[key] = { ...productsData[key], ...clean };
+        }
+
+        async function saveDeletedProductsToCloud() {
+            if (!db || !deletedProductKeys.size) return;
+            const keys = Array.from(deletedProductKeys);
+            await Promise.all(keys.map(key => db.ref("productos/" + key).remove()));
+            keys.forEach(key => deletedProductKeys.delete(key));
+        }
+
+        async function saveStoreConfigToCloud() {
+            if (!db) return;
+            const name = ($("store-name")?.textContent || "ESPINAS BELLAS").trim().slice(0, 120);
+            const slogan = ($("store-slogan")?.textContent || "").trim().slice(0, 250);
+            await db.ref("config").update({ nombre: name, slogan });
         }
 
         function toggleTheme() {
@@ -384,7 +495,8 @@
 
         function updateInlineStock(key, val) {
             if (productsData[key]) {
-                productsData[key].stock = Number(val) || 0;
+                productsData[key].stock = Math.max(0, Number(val) || 0);
+                markProductDirty(key);
             }
         }
 
@@ -513,8 +625,10 @@
             const p = productsData[key];
             if (!p) return;
 
-            let imgs = (Array.isArray(p.imagenes) && p.imagenes.length) ? p.imagenes : [p.imagen || PLACEHOLDER];
-            p.imagenes = imgs;
+            const storedImgs = Array.isArray(p.imagenes)
+                ? p.imagenes.filter(isRemoteImageUrl)
+                : (isRemoteImageUrl(p.imagen) ? [p.imagen] : []);
+            const imgs = storedImgs.length ? storedImgs : [PLACEHOLDER];
 
             $("modal-main-img").src = imgs[0];
             
@@ -557,8 +671,12 @@
             $("product-modal").style.display = "flex";
         }
 
-        function closeModal(force = false) {
-            if (force === true || event.target.id === "product-modal") {
+        function closeModal(arg = false) {
+            const shouldClose =
+                arg === true ||
+                (arg && arg.target && arg.target.id === "product-modal");
+
+            if (shouldClose) {
                 $("product-modal").style.display = "none";
                 currentModalKey = null;
             }
@@ -570,22 +688,33 @@
             el.classList.add("active");
         }
 
-        function addModalImgUrl() {
+        async function addModalImgUrl() {
             if (!isBoss || !currentModalKey) return;
-            let url = prompt("Ingresa la URL directa de la imagen (ej: https://...):");
-            if (url) {
-                url = url.trim();
-                // Validar que no sea un texto gigante o en Base64 que sature Firebase
-                if (url.length > 1000) {
-                    showToast("⚠️ La URL es demasiado larga. Usa un enlace directo más corto.");
-                    return;
-                }
-                const p = productsData[currentModalKey];
-                if (!Array.isArray(p.imagenes)) p.imagenes = [];
-                p.imagenes.push(url);
-                openModal(currentModalKey);
-                showToast("🔗 Imagen agregada (Guarda cambios)");
+            let url = prompt("Ingresa la URL DIRECTA de la imagen (https://...):");
+            if (!url) return;
+
+            url = url.trim();
+
+            if (!isRemoteImageUrl(url)) {
+                showToast("⚠️ Usa una URL http/https directa. No se aceptan Base64, blob: ni enlaces gigantes.");
+                return;
             }
+
+            showToast("🔎 Verificando imagen...");
+            try {
+                await testImageUrl(url);
+            } catch (err) {
+                console.error("Image URL error:", err);
+                showToast("⚠️ Esa URL no se puede mostrar como imagen. Prueba un enlace directo a .jpg, .png, .webp, etc.");
+                return;
+            }
+
+            const p = productsData[currentModalKey];
+            if (!Array.isArray(p.imagenes)) p.imagenes = [];
+            if (!p.imagenes.includes(url)) p.imagenes.push(url);
+            markProductDirty(currentModalKey);
+            openModal(currentModalKey);
+            showToast("🔗 Imagen agregada. Presiona Guardar Cambios.");
         }
 
         function removeModalImg(index) {
@@ -612,6 +741,7 @@
                 $("login-form").style.display = "none";
                 $("logout-btn").style.display = "block";
                 $("admin-wa").value = adminCreds.wa;
+                setHeaderEditable(true);
                 renderProducts();
                 showToast("✨ Modo Administrador Activado");
             } else {
@@ -626,6 +756,7 @@
             $("auth-title").textContent = "Iniciar Sesión";
             $("login-form").style.display = "block";
             $("logout-btn").style.display = "none";
+            setHeaderEditable(false);
             renderProducts();
             showToast("👋 Sesión cerrada");
         }
@@ -642,8 +773,9 @@
                 caracteristicas: "Características",
                 categoria: "General",
                 stock: 10,
-                imagenes: [PLACEHOLDER]
+                imagenes: []
             };
+            markProductDirty(key);
             renderProducts();
             openModal(key);
             showToast("✨ Producto creado");
@@ -653,6 +785,8 @@
             if (!isBoss) return;
             if (confirm("¿Estás seguro de eliminar este producto?")) {
                 delete productsData[key];
+                dirtyProducts.delete(key);
+                deletedProductKeys.add(key);
                 if (currentModalKey === key) closeModal(true);
                 saveAllChanges();
                 showToast("🗑️ Producto eliminado");
@@ -667,66 +801,137 @@
             p.descripcion = $("modal-desc").textContent.trim();
             p.caracteristicas = $("modal-features").textContent.trim();
             p.categoria = $("modal-category").textContent.trim();
-            p.stock = Number($("modal-stock").value) || 0;
+            p.stock = Math.max(0, Number($("modal-stock").value) || 0);
+            markProductDirty(currentModalKey);
 
             saveAllChanges();
             closeModal(true);
         }
 
-        function saveAllChanges() {
+        async function saveAllChanges() {
             if (!isBoss) return;
+
             document.querySelectorAll(".card").forEach(card => {
                 const k = card.dataset.key;
-                if (productsData[k]) {
-                    const stInput = card.querySelector(".edit-stock");
-                    if (stInput) productsData[k].stock = Number(stInput.value) || 0;
+                if (!productsData[k]) return;
+                const stInput = card.querySelector(".edit-stock");
+                if (!stInput) return;
+
+                const newStock = Math.max(0, Number(stInput.value) || 0);
+                if (newStock !== Number(productsData[k].stock || 0)) {
+                    productsData[k].stock = newStock;
+                    markProductDirty(k);
                 }
             });
 
-            if (db) {
-                // Limpiar posibles campos nulos o vacíos antes de enviar a Firebase
-                const cleanData = JSON.parse(JSON.stringify(productsData));
-                db.ref("productos").set(cleanData).then(() => {
-                    showToast("☁️ ¡Cambios guardados en la nube!");
-                }).catch(err => {
-                    console.error("Firebase write error:", err);
-                    showToast("⚠️ Error: Los datos son muy pesados para Firebase");
-                });
-            } else {
-                showToast("💾 Cambios guardados localmente");
+            await saveLocalCache(productsData);
+
+            if (!db) {
+                renderProducts();
+                showToast("💾 Guardado localmente. La nube no está disponible.");
+                return;
             }
-            
-            saveLocalCache(productsData);
+
+            try {
+                // Guardamos cada producto por separado. Así nunca se envía
+                // todo el catálogo en un único .set(), que era la causa
+                // principal del error FIREBASE ... Write too large.
+                const keysToSave = Array.from(new Set([
+                    ...dirtyProducts,
+                    ...Object.keys(productsData)
+                ]));
+
+                const results = await Promise.allSettled(
+                    keysToSave.map(async key => {
+                        if (!productsData[key]) return;
+                        await saveProductToCloud(key);
+                        dirtyProducts.delete(key);
+                    })
+                );
+
+                await saveDeletedProductsToCloud();
+                await saveStoreConfigToCloud();
+
+                const failed = results.filter(r => r.status === "rejected");
+                if (failed.length) {
+                    failed.forEach(r => console.error("Firebase product write error:", r.reason));
+                    showToast(`⚠️ ${failed.length} producto(s) no pudieron guardarse. Revisa la consola.`);
+                } else {
+                    showToast("☁️ ¡Cambios guardados y sincronizados en todos los dispositivos!");
+                }
+            } catch (err) {
+                console.error("Firebase write error:", err);
+                const msg = String(err?.message || err);
+                if (/permission|denied/i.test(msg)) {
+                    showToast("⚠️ Firebase rechazó la escritura: revisa las reglas/permisos de Realtime Database.");
+                } else {
+                    showToast("⚠️ No se pudo guardar en Firebase. Se conservó una copia local.");
+                }
+            }
+
+            await saveLocalCache(productsData);
             renderProducts();
         }
 
-        function updateAdminConfig() {
+        async function updateAdminConfig() {
             if (!isBoss) return;
-            const wa = $("admin-wa").value.trim();
-            if (wa) {
-                adminCreds.wa = wa;
-                if (db) db.ref("config/whatsapp").set(wa);
-                showToast("✅ WhatsApp actualizado");
+            const wa = $("admin-wa").value.trim().replace(/\D/g, "");
+            if (!wa) {
+                showToast("⚠️ Ingresa un número válido");
+                return;
+            }
+
+            adminCreds.wa = wa;
+            try {
+                if (db) await db.ref("config/whatsapp").set(wa);
+                showToast(db ? "✅ WhatsApp actualizado en la nube" : "✅ WhatsApp actualizado localmente");
+            } catch (err) {
+                console.error("Firebase config write error:", err);
+                showToast("⚠️ No se pudo guardar el WhatsApp en Firebase");
             }
         }
 
-        function editStoreLogo() {
+        async function editStoreLogo() {
             if (!isBoss) return;
-            const url = prompt("URL del nuevo logo:");
-            if (url && url.trim()) {
-                $("store-logo").src = url.trim();
-                if (db) db.ref("config/logo").set(url.trim());
-                showToast("Logo actualizado");
+            const raw = prompt("URL directa del nuevo logo:");
+            if (!raw) return;
+            const url = raw.trim();
+
+            if (!isRemoteImageUrl(url)) {
+                showToast("⚠️ Usa una URL http/https directa para el logo");
+                return;
+            }
+
+            try {
+                await testImageUrl(url);
+                $("store-logo").src = url;
+                if (db) await db.ref("config/logo").set(url);
+                showToast("✅ Logo actualizado");
+            } catch (err) {
+                console.error("Logo URL error:", err);
+                showToast("⚠️ La URL del logo no carga una imagen válida");
             }
         }
 
-        function editHeaderBg() {
+        async function editHeaderBg() {
             if (!isBoss) return;
-            const url = prompt("URL de la imagen de fondo:");
-            if (url && url.trim()) {
-                $("dynamic-header").style.backgroundImage = `url("${url.trim()}")`;
-                if (db) db.ref("config/background").set(url.trim());
-                showToast("Fondo actualizado");
+            const raw = prompt("URL directa de la imagen de fondo:");
+            if (!raw) return;
+            const url = raw.trim();
+
+            if (!isRemoteImageUrl(url)) {
+                showToast("⚠️ Usa una URL http/https directa para el fondo");
+                return;
+            }
+
+            try {
+                await testImageUrl(url);
+                $("dynamic-header").style.backgroundImage = `url("${url}")`;
+                if (db) await db.ref("config/background").set(url);
+                showToast("✅ Fondo actualizado");
+            } catch (err) {
+                console.error("Background URL error:", err);
+                showToast("⚠️ La URL del fondo no carga una imagen válida");
             }
         }
 
@@ -736,38 +941,82 @@
         // Inicialización
         async function init() {
             loadTheme();
-            const savedCart = JSON.parse(localStorage.getItem("eb_cart") || "[]");
-            if (Array.isArray(savedCart)) cart = savedCart;
+
+            try {
+                const savedCart = JSON.parse(localStorage.getItem("eb_cart") || "[]");
+                if (Array.isArray(savedCart)) cart = savedCart;
+            } catch (_) {
+                cart = [];
+            }
             updateCartUI();
 
             productsData = await loadLocalCache();
             renderProducts();
 
-            if (window.firebase) {
-                firebase.initializeApp({
-                    apiKey: "AIzaSyAOCuJ_tFSsKKqXKtgGvrrZgWDAPqt2uEk",
-                    databaseURL: DB_URL,
-                    projectId: "fruteria-las-espinas"
-                });
+            if (!window.firebase) {
+                console.error("Firebase SDK no cargó");
+                showToast("⚠️ Firebase no cargó. Se usará la copia local.");
+                return;
+            }
+
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp({
+                        apiKey: "AIzaSyAOCuJ_tFSsKKqXKtgGvrrZgWDAPqt2uEk",
+                        databaseURL: DB_URL,
+                        projectId: "fruteria-las-espinas"
+                    });
+                }
+
                 db = firebase.database();
 
-                db.ref("productos").on("value", snap => {
-                    const val = snap.val();
-                    if (val) {
-                        productsData = val;
-                        renderProducts();
-                        saveLocalCache(val);
-                    }
+                db.ref(".info/connected").on("value", snap => {
+                    cloudReady = snap.val() === true;
+                    if (cloudReady) console.info("Firebase: conectado");
+                    else console.warn("Firebase: sin conexión en tiempo real; se intentará reconectar");
+                });
+
+                db.ref("productos").on("value", async snap => {
+                    const cloud = snap.val() || {};
+
+                    // No pisar cambios locales que todavía no se han guardado.
+                    const merged = { ...cloud };
+                    dirtyProducts.forEach(key => {
+                        if (productsData[key]) merged[key] = productsData[key];
+                    });
+                    deletedProductKeys.forEach(key => delete merged[key]);
+
+                    productsData = merged;
+                    renderProducts();
+                    await saveLocalCache(productsData);
+                }, err => {
+                    console.error("Firebase read error (productos):", err);
+                    showToast("⚠️ No se pudo leer el catálogo desde Firebase");
                 });
 
                 db.ref("config").on("value", snap => {
-                    const cfg = snap.val();
-                    if (cfg) {
-                        if (cfg.whatsapp) adminCreds.wa = cfg.whatsapp;
-                        if (cfg.logo) $("store-logo").src = cfg.logo;
-                        if (cfg.background) $("dynamic-header").style.backgroundImage = `url("${cfg.background}")`;
+                    const cfg = snap.val() || {};
+
+                    if (cfg.whatsapp) {
+                        adminCreds.wa = String(cfg.whatsapp);
+                        if (isBoss) $("admin-wa").value = adminCreds.wa;
                     }
+                    if (cfg.logo && isRemoteImageUrl(cfg.logo)) $("store-logo").src = cfg.logo;
+                    if (cfg.background && isRemoteImageUrl(cfg.background)) {
+                        $("dynamic-header").style.backgroundImage = `url("${cfg.background}")`;
+                    }
+                    if (cfg.nombre) {
+                        $("store-name").textContent = cfg.nombre;
+                        $("nav-title").textContent = String(cfg.nombre).toUpperCase();
+                    }
+                    if (typeof cfg.slogan === "string") $("store-slogan").textContent = cfg.slogan;
+                }, err => {
+                    console.error("Firebase read error (config):", err);
                 });
+
+            } catch (err) {
+                console.error("Firebase init error:", err);
+                showToast("⚠️ Error iniciando Firebase. Se usará la copia local.");
             }
         }
 
