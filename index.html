@@ -297,7 +297,7 @@
             }
         }
 
-        /* --- INDEXEDDB PARA EVITAR ERROR DE CUOTA LLENA --- */
+        /* --- INDEXEDDB PARA ALMACENAMIENTO LOCAL SEGURO --- */
         function openIDB() {
             return new Promise((resolve) => {
                 const req = indexedDB.open("eb_db", 1);
@@ -507,7 +507,7 @@
             window.location.href = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
         }
 
-        // Modal de Detalles con soporte de eliminación de imágenes
+        // Modal de Detalles con soporte optimizado de imágenes
         function openModal(key) {
             currentModalKey = key;
             const p = productsData[key];
@@ -572,13 +572,19 @@
 
         function addModalImgUrl() {
             if (!isBoss || !currentModalKey) return;
-            const url = prompt("Ingresa la URL de la imagen:");
-            if (url && url.trim()) {
+            let url = prompt("Ingresa la URL directa de la imagen (ej: https://...):");
+            if (url) {
+                url = url.trim();
+                // Validar que no sea un texto gigante o en Base64 que sature Firebase
+                if (url.length > 1000) {
+                    showToast("⚠️ La URL es demasiado larga. Usa un enlace directo más corto.");
+                    return;
+                }
                 const p = productsData[currentModalKey];
                 if (!Array.isArray(p.imagenes)) p.imagenes = [];
-                p.imagenes.push(url.trim());
+                p.imagenes.push(url);
                 openModal(currentModalKey);
-                showToast("🔗 Imagen agregada");
+                showToast("🔗 Imagen agregada (Guarda cambios)");
             }
         }
 
@@ -591,7 +597,7 @@
             }
             p.imagenes.splice(index, 1);
             openModal(currentModalKey);
-            showToast("🗑️ Imagen eliminada");
+            showToast("🗑️ Imagen eliminada (Guarda cambios)");
         }
 
         // Panel de Administración
@@ -678,11 +684,13 @@
             });
 
             if (db) {
-                db.ref("productos").set(productsData).then(() => {
-                    showToast("☁️ Cambios guardados en la nube");
+                // Limpiar posibles campos nulos o vacíos antes de enviar a Firebase
+                const cleanData = JSON.parse(JSON.stringify(productsData));
+                db.ref("productos").set(cleanData).then(() => {
+                    showToast("☁️ ¡Cambios guardados en la nube!");
                 }).catch(err => {
-                    console.error(err);
-                    showToast("⚠️ Error al guardar en Firebase");
+                    console.error("Firebase write error:", err);
+                    showToast("⚠️ Error: Los datos son muy pesados para Firebase");
                 });
             } else {
                 showToast("💾 Cambios guardados localmente");
@@ -732,7 +740,6 @@
             if (Array.isArray(savedCart)) cart = savedCart;
             updateCartUI();
 
-            // Cargar caché local primero para velocidad
             productsData = await loadLocalCache();
             renderProducts();
 
@@ -744,7 +751,6 @@
                 });
                 db = firebase.database();
 
-                // Sincronización en tiempo real con Firebase
                 db.ref("productos").on("value", snap => {
                     const val = snap.val();
                     if (val) {
