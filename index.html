@@ -106,10 +106,15 @@
         .close-modal { position: absolute; top: 12px; right: 15px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main); }
         .modal-gallery { flex: 1; display: flex; flex-direction: column; gap: 10px; }
         .modal-gallery img { width: 100%; height: 260px; object-fit: cover; border-radius: 10px; }
-        .thumbs { display: flex; gap: 8px; overflow-x: auto; }
-        .thumbs img { width: 50px; height: 50px; border-radius: 6px; cursor: pointer; opacity: 0.6; border: 2px solid transparent; }
-        .thumbs img.active { opacity: 1; border-color: var(--amarillo); }
+        .thumbs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; }
+        .thumb-container { position: relative; display: inline-block; flex-shrink: 0; }
+        .thumb-container img { width: 50px; height: 50px; border-radius: 6px; cursor: pointer; opacity: 0.6; border: 2px solid transparent; object-fit: cover; }
+        .thumb-container img.active { opacity: 1; border-color: var(--amarillo); }
+        .thumb-delete { position: absolute; top: -5px; right: -5px; background: var(--rojo); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; font-weight: bold; cursor: pointer; display: none; align-items: center; justify-content: center; }
+        body.admin-mode .thumb-delete { display: flex; }
+        
         .modal-info { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        [contenteditable="true"] { border: 1px dashed var(--verde-claro); padding: 2px 5px; border-radius: 4px; }
 
         /* Footer flotante administrador */
         .admin-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-nav); padding: 12px; display: none; justify-content: center; gap: 10px; z-index: 4000; border-top: 3px solid var(--amarillo); }
@@ -238,7 +243,7 @@
     <!-- Barra inferior exclusiva para Administrador -->
     <footer class="admin-footer">
         <button class="btn-v" onclick="addNewProduct()">✨ Agregar Producto</button>
-        <button class="btn-y" onclick="saveAllChanges()">💾 Guardar Cambios</button>
+        <button class="btn-y" onclick="saveAllChanges()">💾 Guardar Cambios Generales</button>
         <button class="btn-v" style="background:var(--rojo);" onclick="exitAdminMode()">Salir Admin</button>
     </footer>
 
@@ -356,7 +361,7 @@
                         <span style="font-size:0.75rem; font-weight:bold; color:var(--verde-claro);">${p.categoria || 'General'}</span>
                         <h3 style="font-size:1.05rem; margin:5px 0;">${p.nombre || 'Producto'}</h3>
                         <p style="color:var(--verde-claro); font-weight:bold; font-size:1.1rem;">${p.precio || '$0'}</p>
-                        ${isBoss ? `<div style="margin:5px 0; font-size:0.8rem;">Stock: <input type="number" class="edit-stock" value="${stock}" style="width:60px; padding:2px;"></div>` : ''}
+                        ${isBoss ? `<div style="margin:5px 0; font-size:0.8rem;">Stock: <input type="number" class="edit-stock" value="${stock}" style="width:60px; padding:2px;" onchange="updateInlineStock('${k}', this.value)"></div>` : ''}
                         <div style="display:flex; gap:8px; margin-top:auto; padding-top:10px;">
                             <button class="btn-y" style="flex:1; font-size:0.8rem;" onclick="openModal('${k}')">Ver</button>
                             <button class="btn-v" style="flex:1; font-size:0.8rem; ${stock<=0?'opacity:0.5;cursor:not-allowed;':''}" onclick="addToCart('${k}')" ${stock<=0?'disabled':''}>Añadir</button>
@@ -368,6 +373,12 @@
             });
             updateCategoriesSelect();
             filterProducts();
+        }
+
+        function updateInlineStock(key, val) {
+            if (productsData[key]) {
+                productsData[key].stock = Number(val) || 0;
+            }
         }
 
         function updateCategoriesSelect() {
@@ -489,18 +500,26 @@
             window.location.href = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
         }
 
-        // Modal de Detalles
+        // Modal de Detalles con soporte de eliminación de imágenes
         function openModal(key) {
             currentModalKey = key;
             const p = productsData[key];
             if (!p) return;
 
-            const imgs = (Array.isArray(p.imagenes) && p.imagenes.length) ? p.imagenes : [p.imagen || PLACEHOLDER];
+            let imgs = (Array.isArray(p.imagenes) && p.imagenes.length) ? p.imagenes : [p.imagen || PLACEHOLDER];
+            p.imagenes = imgs; // Asegurar estructura
+
             $("modal-main-img").src = imgs[0];
             
-            let thumbsHtml = imgs.map((img, idx) => `<img src="${img}" class="${idx===0?'active':''}" onclick="changeMainImg(this, '${img}')">`).join('');
+            let thumbsHtml = imgs.map((img, idx) => `
+                <div class="thumb-container">
+                    <img src="${img}" class="${idx===0?'active':''}" onclick="changeMainImg(this, '${img}')">
+                    ${isBoss ? `<button class="thumb-delete" onclick="event.stopPropagation(); removeModalImg(${idx})">&times;</button>` : ''}
+                </div>
+            `).join('');
+
             if (isBoss) {
-                thumbsHtml += `<button onclick="addModalImgUrl()" style="width:50px; height:50px; border-radius:6px; border:2px dashed var(--verde-claro); background:var(--bg-body); cursor:pointer;">🔗+</button>`;
+                thumbsHtml += `<button onclick="addModalImgUrl()" style="width:50px; height:50px; border-radius:6px; border:2px dashed var(--verde-claro); background:var(--bg-body); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; vertical-align:top;">🔗+</button>`;
             }
             $("modal-thumbs").innerHTML = thumbsHtml;
 
@@ -547,13 +566,25 @@
         function addModalImgUrl() {
             if (!isBoss || !currentModalKey) return;
             const url = prompt("Ingresa la URL de la imagen:");
-            if (url) {
+            if (url && url.trim()) {
                 const p = productsData[currentModalKey];
                 if (!Array.isArray(p.imagenes)) p.imagenes = [];
                 p.imagenes.push(url.trim());
                 openModal(currentModalKey);
-                showToast("🔗 Imagen agregada por URL");
+                showToast("🔗 Imagen agregada");
             }
+        }
+
+        function removeModalImg(index) {
+            if (!isBoss || !currentModalKey) return;
+            const p = productsData[currentModalKey];
+            if (p.imagenes.length <= 1) {
+                showToast("⚠️ El producto debe tener al menos una imagen");
+                return;
+            }
+            p.imagenes.splice(index, 1);
+            openModal(currentModalKey);
+            showToast("🗑️ Imagen eliminada");
         }
 
         // Panel de Administración
@@ -609,7 +640,6 @@
             if (!isBoss) return;
             if (confirm("¿Estás seguro de eliminar este producto?")) {
                 delete productsData[key];
-                renderProducts();
                 if (currentModalKey === key) closeModal(true);
                 saveAllChanges();
                 showToast("🗑️ Producto eliminado");
@@ -628,7 +658,6 @@
 
             saveAllChanges();
             closeModal(true);
-            showToast("💾 Cambios guardados");
         }
 
         function saveAllChanges() {
@@ -642,8 +671,16 @@
             });
 
             if (db) {
-                db.ref("productos").set(productsData).then(() => showToast("☁️ Sincronizado en la nube")).catch(() => {});
+                db.ref("productos").set(productsData).then(() => {
+                    showToast("☁️ Cambios guardados en la nube");
+                }).catch(err => {
+                    console.error(err);
+                    showToast("⚠️ Error al guardar en Firebase");
+                });
+            } else {
+                showToast("💾 Cambios guardados localmente");
             }
+            
             saveLocalCache(productsData);
             renderProducts();
         }
@@ -661,7 +698,7 @@
         function editStoreLogo() {
             if (!isBoss) return;
             const url = prompt("URL del nuevo logo:");
-            if (url) {
+            if (url && url.trim()) {
                 $("store-logo").src = url.trim();
                 if (db) db.ref("config/logo").set(url.trim());
                 showToast("Logo actualizado");
@@ -671,7 +708,7 @@
         function editHeaderBg() {
             if (!isBoss) return;
             const url = prompt("URL de la imagen de fondo:");
-            if (url) {
+            if (url && url.trim()) {
                 $("dynamic-header").style.backgroundImage = `url("${url.trim()}")`;
                 if (db) db.ref("config/background").set(url.trim());
                 showToast("Fondo actualizado");
@@ -725,7 +762,6 @@
         $("price-max").addEventListener("input", filterProducts);
         $("category-filter").addEventListener("change", filterProducts);
         $("sort-filter").addEventListener("change", () => {
-            // Lógica sencilla de ordenamiento visual
             const val = $("sort-filter").value;
             const grid = $("product-grid");
             const cards = Array.from(grid.getElementsByClassName("card"));
