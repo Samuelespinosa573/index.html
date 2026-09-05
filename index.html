@@ -291,7 +291,7 @@
             <div class="modal-gallery">
                 <img id="modal-main-img" class="modal-main-img" src="" alt="Imagen principal">
                 <div id="modal-thumbs" class="modal-thumbs"></div>
-                
+                <input type="file" id="local-file-input" style="display:none" accept="image/*" onchange="handleLocalFileSelect(event)">
             </div>
             
             <div class="modal-details">
@@ -414,8 +414,8 @@
         "use strict";
 
         const DB_ROOT = "https://fruteria-las-espinas-default-rtdb.firebaseio.com";
-        const CACHE_PRODUCTS_META = "espinas_bellas_products_meta_v6";
-        const CACHE_CATALOG_SNAPSHOT = "espinas_bellas_catalog_snapshot_v6";
+        const CACHE_PRODUCTS_META = "espinas_bellas_products_meta_v5";
+        const CACHE_CATALOG_SNAPSHOT = "espinas_bellas_catalog_snapshot_v5";
         const CACHE_CONFIG = "espinas_bellas_config_v5";
         const CACHE_CART = "espinas_bellas_cart_v4";
         const CACHE_THEME = "espinas_bellas_theme_v1";
@@ -432,8 +432,6 @@
         let renderToken = 0;
         let toastTimer = null;
         let cacheDBPromise = null;
-        let firebaseSyncReady = false;
-        let lastFirebaseProductsHash = '';
 
         const $ = id => document.getElementById(id);
 
@@ -557,10 +555,26 @@
             if ($("results-meta")) $("results-meta").textContent = "Cargando catálogo…";
         }
 
+        function isValidImageUrl(url) {
+            if (!url || typeof url !== "string") return false;
+            const value = url.trim();
+            if (!value) return false;
+            if (value.startsWith("data:image/")) return true;
+            try {
+                const u = new URL(value, window.location.href);
+                return ["http:", "https:"].includes(u.protocol);
+            } catch (_) {
+                return false;
+            }
+        }
+
         function getProductImage(p) {
-            if (p && Array.isArray(p.imagenes) && p.imagenes.length && p.imagenes[0]) return p.imagenes[0];
-            if (p && p.imagen) return p.imagen;
-            return PLACEHOLDER;
+            const candidates = [];
+            if (p && Array.isArray(p.imagenes)) candidates.push(...p.imagenes);
+            if (p && p.imagen) candidates.push(p.imagen);
+
+            const valid = candidates.find(isValidImageUrl);
+            return valid || PLACEHOLDER;
         }
 
         function getCategory(p) { return String(p?.categoria || p?.category || "General").trim() || "General"; }
@@ -600,7 +614,7 @@
             const deleteButton = isBoss ? `<p onclick="del('${safeKey(k)}')" style="color:var(--rojo);cursor:pointer;font-size:.75rem;margin-top:12px;font-weight:bold;">🗑️ ELIMINAR</p>` : '';
             
             card.innerHTML = `${stock<=0?'<div class="badge-agotado">AGOTADO</div>':''}
-                <img class="card-img" src="${escapeHTML(getProductImage(p))}${getProductImage(p).includes("?") ? "&" : "?"}v=${Date.now()}" alt="${escapeHTML(name)}" loading="lazy" onclick="openProductModal('${safeKey(k)}')">
+                <img class="card-img" src="${escapeHTML(getProductImage(p))}" alt="${escapeHTML(name)}" loading="lazy" onerror="this.onerror=null;this.src=PLACEHOLDER" onclick="openProductModal('${safeKey(k)}')">
                 <div style="padding:15px;flex-grow:1;display:flex;flex-direction:column;">
                     <div class="product-meta"><span class="product-chip">${escapeHTML(category)}</span><span class="product-chip stock-chip ${stock>0&&stock<=5?'low':''}">${stock<=0?'Agotado':stock<=5?`Quedan ${stock}`:'Disponible'}</span></div>
                     <h3 class="e-n" contenteditable="${isBoss}" style="font-size:1.1rem;">${escapeHTML(name)}</h3>
@@ -698,11 +712,9 @@
 
             if (db) {
                 db.ref('productos').set(allProductsData).then(() => {
-                    idbSetCatalogSnapshot(allProductsData);
-                    writeCache(CACHE_PRODUCTS_META, allProductsData);
-                    toast("💾 Cambios guardados en Firebase");
+                    toast("💾 Cambios guardados en la nube");
                 }).catch(() => {
-                    toast("❌ Error al guardar en Firebase");
+                    toast("❌ Error al guardar en la nube");
                 });
             } else {
                 toast("💾 Cambios guardados localmente");
@@ -710,16 +722,6 @@
             
             idbSetCatalogSnapshot(allProductsData);
             renderProducts();
-        }
-
-        function saveProductDirect(key, product) {
-            if (!db || !key || !product) return;
-            db.ref('productos/' + key).set(product)
-                .then(() => {
-                    writeCache(CACHE_PRODUCTS_META, allProductsData);
-                    idbSetCatalogSnapshot(allProductsData);
-                })
-                .catch(() => toast("❌ No se pudo guardar el producto"));
         }
 
         function saveModalChanges() {
@@ -758,6 +760,7 @@
 
             if (isBoss) {
                 thumbsHtml += `
+                    <div class="modal-thumb-add" title="Subir imagen desde archivo" onclick="triggerLocalFileInput()">📁+</div>
                     <div class="modal-thumb-add" title="Añadir imagen por URL" onclick="addImageByUrl()" style="font-size:1.1rem;">🔗+</div>
                 `;
             }
@@ -812,19 +815,36 @@
             el.classList.add('active');
         }
 
+        function triggerLocalFileInput() {
+            if (!isBoss) return;
+            $("local-file-input").click();
+        }
+
+        function handleLocalFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file || !currentModalKey || !allProductsData[currentModalKey]) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                const p = allProductsData[currentModalKey];
+                if (!Array.isArray(p.imagenes)) p.imagenes = [];
+                p.imagenes.push(base64);
+                openProductModal(currentModalKey);
+                toast("📁 Imagen añadida");
+            };
+            reader.readAsDataURL(file);
+            event.target.value = "";
+        }
+
         function addImageByUrl() {
             if (!isBoss || !currentModalKey || !allProductsData[currentModalKey]) return;
             const url = prompt("Ingresa la URL de la imagen:");
-            if (!url || !url.trim()) return;
-
+            if (!url) return;
             const p = allProductsData[currentModalKey];
             if (!Array.isArray(p.imagenes)) p.imagenes = [];
             p.imagenes.push(url.trim());
-
-            // Guarda inmediatamente para evitar perder cambios al refrescar
-            saveProductDirect(currentModalKey, p);
             openProductModal(currentModalKey);
-            toast("🔗 Imagen añadida y guardada");
+            toast("🔗 Imagen añadida por URL");
         }
 
         function removeModalImage(index) {
@@ -1059,30 +1079,6 @@
             return out;
         }
 
-        function catalogHash(obj){
-            try { return JSON.stringify(obj); }
-            catch(e){ return String(Date.now()); }
-        }
-
-        function applyRemoteProducts(raw){
-            const clean = sanitizeCatalog(raw || {});
-            const hash = catalogHash(clean);
-            if(hash === lastFirebaseProductsHash && Object.keys(allProductsData).length) return;
-            lastFirebaseProductsHash = hash;
-            allProductsData = clean;
-            // Firebase siempre gana sobre cualquier caché local antigua
-            writeCache(CACHE_PRODUCTS_META, allProductsData);
-            idbSetCatalogSnapshot(allProductsData);
-            renderProducts();
-        }
-
-        function forceFirebaseRefresh(){
-            if(!db) return;
-            db.ref('productos').once('value').then(snap=>{
-                if(snap.exists()) applyRemoteProducts(snap.val());
-            }).catch(()=>{});
-        }
-
         async function initApp() {
             loadLocalState();
             
@@ -1107,11 +1103,6 @@
                 db = firebase.database();
                 auth = firebase.auth();
 
-                // Primera prioridad: sincronizar siempre con Firebase al abrir cualquier dispositivo
-                db.ref('productos').once('value').then(snap => {
-                    if (snap.exists()) applyRemoteProducts(snap.val());
-                }).catch(() => {});
-
                 auth.onAuthStateChanged(user => {
                     if (user) {
                         $("auth-status").innerText = `Hola, ${user.displayName || user.email}`;
@@ -1125,18 +1116,12 @@
 
                 db.ref('productos').on('value', snap => {
                     const raw = snap.val();
-                    if (raw) applyRemoteProducts(raw);
-                    firebaseSyncReady = true;
-                }, error => {
-                    toast('⚠️ Error sincronizando catálogo');
+                    if (raw) {
+                        allProductsData = sanitizeCatalog(raw);
+                        renderProducts();
+                        idbSetCatalogSnapshot(allProductsData);
+                    }
                 });
-
-                // Revalida cuando una pestaña vuelve a estar activa
-                document.addEventListener('visibilitychange', () => {
-                    if (!document.hidden) forceFirebaseRefresh();
-                });
-
-                window.addEventListener('online', forceFirebaseRefresh);
 
                 db.ref('config').on('value', snap => {
                     const c = snap.val();
