@@ -567,13 +567,21 @@
             }
         }
 
+        function bustImageCache(url) {
+            if (!isValidImageUrl(url) || String(url).startsWith("data:image/")) return url;
+            try {
+                const sep = url.includes("?") ? "&" : "?";
+                return url + sep + "v=" + Date.now();
+            } catch(e) { return url; }
+        }
+
         function getProductImage(p) {
             const candidates = [];
             if (p && Array.isArray(p.imagenes)) candidates.push(...p.imagenes);
             if (p && p.imagen) candidates.push(p.imagen);
 
             const valid = candidates.find(isValidImageUrl);
-            return valid || PLACEHOLDER;
+            return valid ? bustImageCache(valid) : PLACEHOLDER;
         }
 
         function getCategory(p) { return String(p?.categoria || p?.category || "General").trim() || "General"; }
@@ -750,11 +758,11 @@
             const stock = Number(p.stock) || 0;
             const imgs = Array.isArray(p.imagenes) && p.imagenes.length ? p.imagenes : (p.imagen ? [p.imagen] : [PLACEHOLDER]);
             const main = $("modal-main-img"); 
-            main.src = imgs[0] || PLACEHOLDER;
+            main.src = bustImageCache(imgs[0] || PLACEHOLDER);
 
             let thumbsHtml = imgs.map((img, idx) => `
                 <div class="modal-thumb-wrap">
-                    <img src="${escapeHTML(img)}" class="${idx === 0 ? 'active' : ''}" onclick="changeModalMainImg(this, '${safeKey(img)}')">
+                    <img src="${escapeHTML(bustImageCache(img))}" class="${idx === 0 ? 'active' : ''}" onclick="changeModalMainImg(this, '${safeKey(img)}')">
                     ${isBoss ? `<button class="modal-thumb-del" title="Eliminar imagen" onclick="removeModalImage(${idx})">&times;</button>` : ''}
                 </div>
             `).join('');
@@ -1102,12 +1110,13 @@
 
                 db.ref('productos').on('value', snap => {
                     const raw = snap.val();
-                    if (raw) {
+                    if (raw && typeof raw === 'object') {
                         allProductsData = sanitizeCatalog(raw);
-                        renderProducts();
+                        writeCache(CACHE_PRODUCTS_META, allProductsData);
                         idbSetCatalogSnapshot(allProductsData);
+                        renderProducts();
                     }
-                });
+                }, err => { console.warn('Firebase productos:', err); });
 
                 db.ref('config').on('value', snap => {
                     const c = snap.val();
