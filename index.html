@@ -291,7 +291,6 @@
             <div class="modal-gallery">
                 <img id="modal-main-img" class="modal-main-img" src="" alt="Imagen principal">
                 <div id="modal-thumbs" class="modal-thumbs"></div>
-                <input type="file" id="local-file-input" style="display:none" accept="image/*" onchange="handleLocalFileSelect(event)">
             </div>
             
             <div class="modal-details">
@@ -712,6 +711,8 @@
 
             if (db) {
                 db.ref('productos').set(allProductsData).then(() => {
+                    idbSetCatalogSnapshot(allProductsData);
+                    writeCache(CACHE_PRODUCTS_META, allProductsData);
                     toast("💾 Cambios guardados en la nube");
                 }).catch(() => {
                     toast("❌ Error al guardar en la nube");
@@ -760,7 +761,6 @@
 
             if (isBoss) {
                 thumbsHtml += `
-                    <div class="modal-thumb-add" title="Subir imagen desde archivo" onclick="triggerLocalFileInput()">📁+</div>
                     <div class="modal-thumb-add" title="Añadir imagen por URL" onclick="addImageByUrl()" style="font-size:1.1rem;">🔗+</div>
                 `;
             }
@@ -815,36 +815,34 @@
             el.classList.add('active');
         }
 
-        function triggerLocalFileInput() {
-            if (!isBoss) return;
-            $("local-file-input").click();
-        }
-
-        function handleLocalFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file || !currentModalKey || !allProductsData[currentModalKey]) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64 = e.target.result;
-                const p = allProductsData[currentModalKey];
-                if (!Array.isArray(p.imagenes)) p.imagenes = [];
-                p.imagenes.push(base64);
-                openProductModal(currentModalKey);
-                toast("📁 Imagen añadida");
-            };
-            reader.readAsDataURL(file);
-            event.target.value = "";
-        }
-
         function addImageByUrl() {
             if (!isBoss || !currentModalKey || !allProductsData[currentModalKey]) return;
             const url = prompt("Ingresa la URL de la imagen:");
-            if (!url) return;
+            if (!url || !url.trim()) return;
+
+            const cleanUrl = url.trim();
+            if (!/^https?:\/\//i.test(cleanUrl)) {
+                toast("⚠️ Ingresa una URL válida");
+                return;
+            }
+
             const p = allProductsData[currentModalKey];
             if (!Array.isArray(p.imagenes)) p.imagenes = [];
-            p.imagenes.push(url.trim());
+            p.imagenes.push(cleanUrl);
+
+            // Guardado inmediato para evitar pérdida con F5
+            saveProductImmediately(currentModalKey);
             openProductModal(currentModalKey);
-            toast("🔗 Imagen añadida por URL");
+            toast("🔗 Imagen añadida y guardada");
+        }
+
+        function saveProductImmediately(key) {
+            if (!db || !key || !allProductsData[key]) return;
+            const data = sanitizeCatalog(allProductsData);
+            db.ref('productos/' + key).set(data[key]).then(() => {
+                idbSetCatalogSnapshot(allProductsData);
+                writeCache(CACHE_PRODUCTS_META, allProductsData);
+            }).catch(() => toast("❌ Error guardando producto"));
         }
 
         function removeModalImage(index) {
@@ -855,28 +853,16 @@
                 return;
             }
             p.imagenes.splice(index, 1);
+            saveProductImmediately(currentModalKey);
             openProductModal(currentModalKey);
             toast("🗑️ Imagen eliminada");
         }
 
         function editLogo() {
             if (!isBoss) return;
-            const url = prompt("Ingresa la URL del nuevo logo (o deja en blanco para archivo):");
-            if (url !== null) {
-                if (url.trim() !== "") {
-                    updateConfigField("logo", url.trim());
-                } else {
-                    const input = document.createElement('input');
-                    input.type = 'file'; input.accept = 'image/*';
-                    input.onchange = e => {
-                        const file = e.target.files[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = ev => updateConfigField("logo", ev.target.result);
-                        reader.readAsDataURL(file);
-                    };
-                    input.click();
-                }
+            const url = prompt("Ingresa la URL del nuevo logo:");
+            if (url && /^https?:\/\//i.test(url.trim())) {
+                updateConfigField("logo", url.trim());
             }
         }
 
