@@ -432,6 +432,8 @@
         let renderToken = 0;
         let toastTimer = null;
         let cacheDBPromise = null;
+        let firebaseSyncReady = false;
+        let lastFirebaseProductsHash = '';
 
         const $ = id => document.getElementById(id);
 
@@ -714,6 +716,7 @@
             if (!db || !key || !product) return;
             db.ref('productos/' + key).set(product)
                 .then(() => {
+                    writeCache(CACHE_PRODUCTS_META, allProductsData);
                     idbSetCatalogSnapshot(allProductsData);
                 })
                 .catch(() => toast("❌ No se pudo guardar el producto"));
@@ -1056,6 +1059,29 @@
             return out;
         }
 
+        function catalogHash(obj){
+            try { return JSON.stringify(obj); }
+            catch(e){ return String(Date.now()); }
+        }
+
+        function applyRemoteProducts(raw){
+            const clean = sanitizeCatalog(raw || {});
+            const hash = catalogHash(clean);
+            if(hash === lastFirebaseProductsHash) return;
+            lastFirebaseProductsHash = hash;
+            allProductsData = clean;
+            writeCache(CACHE_PRODUCTS_META, allProductsData);
+            idbSetCatalogSnapshot(allProductsData);
+            renderProducts();
+        }
+
+        function forceFirebaseRefresh(){
+            if(!db) return;
+            db.ref('productos').once('value').then(snap=>{
+                if(snap.exists()) applyRemoteProducts(snap.val());
+            }).catch(()=>{});
+        }
+
         async function initApp() {
             loadLocalState();
             
@@ -1093,13 +1119,18 @@
 
                 db.ref('productos').on('value', snap => {
                     const raw = snap.val();
-                    if (raw) {
-                        allProductsData = sanitizeCatalog(raw);
-                        renderProducts();
-                        idbSetCatalogSnapshot(allProductsData);
-                        writeCache(CACHE_PRODUCTS_META, allProductsData);
-                    }
+                    if (raw) applyRemoteProducts(raw);
+                    firebaseSyncReady = true;
+                }, error => {
+                    toast('⚠️ Error sincronizando catálogo');
                 });
+
+                // Revalida cuando una pestaña vuelve a estar activa
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) forceFirebaseRefresh();
+                });
+
+                window.addEventListener('online', forceFirebaseRefresh);
 
                 db.ref('config').on('value', snap => {
                     const c = snap.val();
